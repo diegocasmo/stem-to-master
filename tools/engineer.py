@@ -170,7 +170,7 @@ def eq_cut_if(node, move, needed, numbers, freq, gains, q, band, keep=None):
 
 
 def tom_edit(node, move):
-    """toms.clean as an edit: keep each tom only around its own hits, with its decay, via a Ride (mute automation)."""
+    """toms.clean: a gate on the tom's own hits, else an edit that keeps each tom only around them (Ride mute automation)."""
     stats = node.hit_stats()
     if stats["hits"] == 0:
         node.record(move, "dropped: no hits", {})
@@ -209,7 +209,14 @@ def tom_edit(node, move):
         ok = change["bleed_change"] <= -1 and change["level_change_min"] >= -1 and change["attack_change_p10"] >= -1
         return ok, change
 
-    node.attempt(move, bleed > -25 and segments, numbers, [{"plugin": "Ride", "settings": {"segments": segments, "ramp_ms": 10}}], judge)
+    # The gate opens 6 dB under the softest own hit and holds through the 300 ms the edit keeps at least; it keeps a
+    # tom's own decay where the edit's fixed gaps do not reach the bleed. The edit is the fallback for toms whose
+    # bleed is too close to their hits for a level threshold.
+    threshold = float(round(levels[levels >= levels.max() - 20].min() - 6, 1))
+    numbers["gate_threshold_db"] = threshold
+    gate = {"plugin": "FreeGate", "settings": {"gate_threshold": max(-80.0, threshold), "gate_ratio": 99.9, "gate_attack": 0.5,
+                                               "gate_hold": 300.0, "gate_release": 100.0, "gate_lookahead": 2.0, "gate_hysteresis": 3.0}}
+    node.attempt(move, bleed > -25 and segments, numbers, [gate, {"plugin": "Ride", "settings": {"segments": segments, "ramp_ms": 10}}], judge)
     node.hits = times_backup
 
 

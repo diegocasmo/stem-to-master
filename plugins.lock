@@ -32,3 +32,11 @@ license = "GPL-3.0"
 url = "https://github.com/michaelwillis/dragonfly-reverb/releases/download/3.2.10/dragonfly-reverb-3.2.10-macos-universal.dmg"
 sha256 = "e0b854b92a4e51ce5851320fb1a9f91ab1a4309f997de070e175b3e5cab4adaf"
 bundle_sha256 = "ebfd3a0cb548a510a0b05910a18a79e7f7f233096e395c029d0e768178bca17f"
+
+[[plugin]]
+name = "FreeGate"
+version = "1.5.7"
+license = "Venn Audio freeware"
+url = "https://www.vennaudio.com/downloads/Free%20Suite/Free%20Suite_MacOS_1.5.7_Release.dmg"
+sha256 = "3806736065e905dc12a7da40873b02069106fad89d12c0836eadf2b4748ce21a"
+bundle_sha256 = "fef267b9a4ccdf6203583a7c5cbef052bb6efe4a99c4c857d107974f4b286d18"
