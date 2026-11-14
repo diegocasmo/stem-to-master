@@ -2492,7 +2492,10 @@
    "target": "kick",
    "outcome": "kept",
    "numbers": {
-    "target_db": 12.5,
+    "range_db": [
+     11.9,
+     13.1
+    ],
     "tried": [
      {
       "step_db": 0,
@@ -2567,7 +2570,10 @@
    "target": "snare",
    "outcome": "kept",
    "numbers": {
-    "target_db": 14.0,
+    "range_db": [
+     11.6,
+     14.4
+    ],
     "tried": [
      {
       "step_db": 0,
@@ -3108,13 +3114,7 @@
    "numbers": {
     "trial_master_loss_db": {
      "kick_low": 1.7,
-     "kick_click": 1.44,
-     "snare_body": 1.93,
-     "snare_crack": 2.35
-    },
-    "mix_targets_db": {
-     "kick_low": 11.7,
-     "snare_body": 14.43
+     "snare_body": 1.93
     }
    }
   },
@@ -3123,7 +3123,10 @@
    "target": "kick",
    "outcome": "kept",
    "numbers": {
-    "target_db": 11.7,
+    "range_db": [
+     11.1,
+     12.3
+    ],
     "tried": [
      {
       "step_db": 0,
@@ -3176,69 +3179,16 @@
   {
    "move": "balance.punch",
    "target": "snare",
-   "outcome": "dropped: on target",
+   "outcome": "dropped: in range",
    "numbers": {
-    "target_db": 14.43,
+    "range_db": [
+     12.03,
+     14.83
+    ],
     "tried": [
      {
       "step_db": 0,
       "snare_body": 14.17
-     },
-     {
-      "step_db": 1,
-      "snare_body": 15.06
-     },
-     {
-      "step_db": 2,
-      "snare_body": 16.03
-     },
-     {
-      "step_db": 3,
-      "snare_body": 16.98
-     },
-     {
-      "step_db": 4,
-      "snare_body": 17.83
-     },
-     {
-      "step_db": 5,
-      "snare_body": 18.64
-     },
-     {
-      "step_db": 6,
-      "snare_body": 19.45
-     },
-     {
-      "step_db": 7,
-      "snare_body": 20.34
-     },
-     {
-      "step_db": 8,
-      "snare_body": 21.21
-     },
-     {
-      "step_db": 9,
-      "snare_body": 22.11
-     },
-     {
-      "step_db": -1,
-      "snare_body": 13.28
-     },
-     {
-      "step_db": -2,
-      "snare_body": 12.38
-     },
-     {
-      "step_db": -3,
-      "snare_body": 11.51
-     },
-     {
-      "step_db": -4,
-      "snare_body": 10.64
-     },
-     {
-      "step_db": -5,
-      "snare_body": 9.82
      }
     ],
     "fader_db": 3.95

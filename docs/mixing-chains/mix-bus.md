@@ -15,14 +15,14 @@ The mix bus takes the rest of a tone move from context.md (presence, air, top) a
 - **Why:** cymbals and guitars that leave the mix dull need a lift across the whole mix.
 - **Start:** a high shelf at 7 kHz, Q 0.707, gain the remaining distance to the air rule, capped at 3 dB.
 - **Tool:** `HighShelfFilter` on `mix`.
-- **Needed if:** after air on its owners, the mix's 8-16 kHz minus 1-4 kHz is still more than 1 dB under `AIR_TILT_DB` -10.5 dB plus the cymbal shift (overheads.brightness).
+- **Needed if:** after air on its owners, the mix's 8-16 kHz minus 1-4 kHz is still more than 1 dB under `AIR_TILT_DB` -10.5 dB minus the cymbal shift (overheads.brightness).
 - **Worked if:** always kept when needed; not judged.
 
 ### mix-bus.top
 - **Why:** the top octave sets how open the mix sounds.
 - **Start:** a high shelf at 12 kHz, Q 0.707, gain the remaining distance to the top rule, capped at 3 dB.
 - **Tool:** `HighShelfFilter` on `mix`.
-- **Needed if:** after top on its owners, the mix's 11.3-16 kHz minus 5.6-11.3 kHz is still more than 1 dB under `TOP_TILT_DB` -10.3 dB plus the cymbal shift.
+- **Needed if:** after top on its owners, the mix's 11.3-16 kHz minus 5.6-11.3 kHz is still more than 1 dB under `TOP_TILT_DB` -10.3 dB minus the cymbal shift.
 - **Worked if:** always kept when needed; not judged.
 
 ## Not built
