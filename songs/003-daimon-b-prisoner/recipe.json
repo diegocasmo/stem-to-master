@@ -2519,26 +2519,6 @@
      {
       "step_db": -1,
       "kick_low": 10.6
-     },
-     {
-      "step_db": -2,
-      "kick_low": 9.64
-     },
-     {
-      "step_db": -3,
-      "kick_low": 9.01
-     },
-     {
-      "step_db": -4,
-      "kick_low": 8.01
-     },
-     {
-      "step_db": -5,
-      "kick_low": 7.07
-     },
-     {
-      "step_db": -6,
-      "kick_low": 6.44
      }
     ],
     "fader_db": 13.67
@@ -2597,26 +2577,6 @@
      {
       "step_db": -1,
       "snare_body": 10.13
-     },
-     {
-      "step_db": -2,
-      "snare_body": 9.32
-     },
-     {
-      "step_db": -3,
-      "snare_body": 8.26
-     },
-     {
-      "step_db": -4,
-      "snare_body": 7.43
-     },
-     {
-      "step_db": -5,
-      "snare_body": 6.98
-     },
-     {
-      "step_db": -6,
-      "snare_body": 6.25
      }
     ],
     "fader_db": 13.01
@@ -3137,22 +3097,6 @@
      {
       "step_db": -2,
       "kick_low": 11.78
-     },
-     {
-      "step_db": -3,
-      "kick_low": 10.93
-     },
-     {
-      "step_db": -4,
-      "kick_low": 10.09
-     },
-     {
-      "step_db": -5,
-      "kick_low": 9.0
-     },
-     {
-      "step_db": -6,
-      "kick_low": 7.96
      }
     ],
     "fader_db": 11.67

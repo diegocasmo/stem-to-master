@@ -944,7 +944,7 @@ class Engineer:
         return kick, snare
 
     def punch_faders(self, mixer, loss=None):
-        """Kick and snare faders move (at most 9 dB over or 6 dB under the static balance) only as far as it takes to
+        """Kick and snare faders move (at most 9 dB over or 1 dB under the static balance) only as far as it takes to
         bring their hits' prominence in the mix into the range: the master range plus what the master takes away. A
         fader whose travel does not move the measure (wrong hits) stays where it is."""
         kick_s, snare_s = self.drum_times(mixer)
@@ -959,8 +959,9 @@ class Engineer:
             base = self.static_faders.get(name, start)
             tried = []
             for step in [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, -1, -2, -3, -4, -5, -6]:
-                # At most 9 dB over and 6 dB under the static balance, however many passes run.
-                if not -6 <= start + step - base <= 9:
+                # At most 9 dB over and 1 dB under the static balance, however many passes run: the rule lifts a buried
+                # drum and trims one a little, but a drum the song's own balance makes stand out (a sparse intro) stays.
+                if not -1 <= start + step - base <= 9:
                     continue
                 faders = {name: start + step}
                 found = punch_of(self.mix_of(mixer, faders), self.rate, kick_s, snare_s)[key]
