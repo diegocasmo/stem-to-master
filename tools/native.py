@@ -174,8 +174,3 @@ def shape(audio, rate, settings, context):
     gain_db = np.maximum(decay, recover)
     return apply_gain(audio, rate, 10 ** (gain_db / 20), settings["band_hz"])
 
-
-def softclip(audio, rate, settings, context):
-    """A smooth clipper: t * tanh(x / t) at threshold t, so peaks round off instead of flattening."""
-    t = 10 ** (settings["threshold_db"] / 20)
-    return t * np.tanh(audio / t)

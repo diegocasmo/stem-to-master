@@ -6,7 +6,6 @@ Gaps are ours minus official. The official is used only here, never by the pipel
 """
 import argparse
 import json
-import math
 import time
 from pathlib import Path
 
@@ -15,8 +14,7 @@ import pyloudnorm
 import soundfile
 from scipy import signal
 
-import hits as hitlib
-from punch import bandpass, db, drum_hits, env, prominence, side_mid, tail
+from punch import bandpass, db, drum_hits, env, prominence, tail
 
 OCTAVES = [31.5, 63, 125, 250, 500, 1000, 2000, 4000, 8000, 16000]
 THIRDS = [10000, 12500]

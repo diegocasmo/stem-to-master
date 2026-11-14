@@ -131,29 +131,6 @@ def steep_hpf(node, move, cutoff_candidates, low_band, keep_band, order="24 dB/o
         {"below_db": r2(below), "keep_db": r2(keep)}
 
 
-def gate_from_hits(node, move, floor_rel_db=-25.0):
-    """kick.gate / toms.clean: gate between hits when off-hit bleed is within 25 dB of the hits."""
-    stats = node.hit_stats()
-    if stats["hits"] == 0:
-        node.record(move, "dropped: no hits", {})
-        return
-    bleed = stats["bleed_db"]["all"]
-    levels = np.array(stats["level_db"])
-    gaps = np.diff(node.hits) / node.rate * 1000
-    fastest = float(np.percentile(gaps, 5)) if len(gaps) else 200.0
-    numbers = {"bleed_db": r2(bleed), "softest_hit_db": r2(levels.min()), "fastest_gap_ms": r2(fastest)}
-    candidates = [{"plugin": "NoiseGate", "settings": {"threshold_db": float(round(levels.min() - margin, 1)), "ratio": 10.0,
-                                                        "attack_ms": 0.5, "release_ms": float(round(min(80, fastest * 0.5), 1))}}
-                  for margin in (6, 9, 12)]
-
-    def judge(out, key):
-        change = hits_change(node, out, key)
-        ok = change["bleed_change"] <= -1 and change["level_change_min"] >= -1 and change["attack_change_p10"] >= -1
-        return ok, change
-
-    node.attempt(move, bleed > floor_rel_db, numbers, candidates, judge)
-
-
 def narrow_peaks(node, low, high, rise_db=6.0):
     """Peaks in the long-term spectrum more than rise_db over the 1/3-octave neighbourhood."""
     freqs, power = node.spec()
@@ -167,37 +144,6 @@ def narrow_peaks(node, low, high, rise_db=6.0):
             if rise > rise_db:
                 found.append((float(f), float(rise)))
     return sorted(found, key=lambda x: -x[1])
-
-
-def compress_hits(node, move, ratio, attack, release, spread_db=3.0, low_attack_db=None, targets=(4.0, 6.0)):
-    """kick/snare.compress: needed if hit levels spread more than 3 dB in the dense section, or attack is low."""
-    stats = node.hit_stats()
-    if stats["hits"] < 4:
-        node.record(move, "dropped: too few hits", {"hits": stats["hits"]})
-        return
-    levels, attacks = np.array(stats["level_db"]), np.array(stats["attack_db"])
-    spread = float(np.percentile(levels, 90) - np.percentile(levels, 10))
-    attack_p50 = float(np.median(attacks))
-    for_attack = low_attack_db is not None and attack_p50 < low_attack_db
-    needed = spread > spread_db or for_attack
-    numbers = {"hit_spread_db": r2(spread), "attack_p50_db": r2(attack_p50)}
-    peak_db = float(np.median(levels))
-    candidates = [{"plugin": ZL_COMP, "settings": zl_comp(peak_db - t, ratio, attack, release)} for t in targets]
-    if for_attack:
-        candidates += [{"plugin": ZL_COMP, "settings": zl_comp(peak_db - t, ratio, attack * 1.5, release)} for t in targets]
-
-    def judge(out, key):
-        after = node.hit_stats(out, key)
-        lv, at = np.array(after["level_db"]), np.array(after["attack_db"])
-        new_spread = float(np.percentile(lv, 90) - np.percentile(lv, 10))
-        result = {"hit_spread_db": r2(new_spread), "attack_p50_db": r2(np.median(at))}
-        if for_attack:
-            ok = np.median(at) > attack_p50 + HOLD_DB and new_spread <= spread + HOLD_DB
-        else:
-            ok = new_spread < spread - HOLD_DB and np.median(at) >= attack_p50 - HOLD_DB
-        return ok, result
-
-    node.attempt(move, needed, numbers, candidates, judge)
 
 
 def eq_cut_if(node, move, needed, numbers, freq, gains, q, band, keep=None):
@@ -261,17 +207,6 @@ def tom_edit(node, move):
 
     node.attempt(move, bleed > -25 and segments, numbers, [{"plugin": "Ride", "settings": {"segments": segments, "ramp_ms": 10}}], judge)
     node.hits = times_backup
-
-
-def measure_valley(audio, times, rate):
-    found = measurelib.valley.__wrapped__(audio.T.astype(np.float64), rate, np.asarray(times))
-    return found["valley_db"]["p50"] if found["valley_db"] else -200.0
-
-
-def overlap_db(first, second, rate, band, inside=None):
-    found = measurelib.overlap.__wrapped__(first.T.astype(np.float64), second.T.astype(np.float64), rate, [band], inside)
-    value = next(iter(found["bands"].values()))["overlap_db"]
-    return -200.0 if value is None else value
 
 
 def decide_room(node):
