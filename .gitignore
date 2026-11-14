@@ -1,7 +1,8 @@
-songs/*/stems/
+songs/*/stems
+songs/*/vocals
 songs/*/renders/
 songs/*/cache/
-profiles/*/references/
+profiles/*/references
 plugins/
 .venv/
 __pycache__/
