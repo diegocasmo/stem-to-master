@@ -17,7 +17,6 @@ import numpy as np
 import pedalboard
 import soundfile
 
-import airwindows
 import native
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -34,7 +33,7 @@ def digest(*parts):
 
 
 def _code_tag():
-    files = [[name, hashlib.sha256((TOOLS / name).read_bytes()).hexdigest()] for name in ("daw.py", "native.py", "airwindows.py", "hits.py")]
+    files = [[name, hashlib.sha256((TOOLS / name).read_bytes()).hexdigest()] for name in ("daw.py", "native.py", "hits.py")]
     # Cached files outlive this process, so the libraries and OS build that computed them are part of every key.
     libs = [metadata.version(name) for name in ("numpy", "scipy", "pedalboard", "numba", "soundfile")]
     return digest(files, libs, sys.version, platform.platform(), os.uname().version)
@@ -130,11 +129,9 @@ def load(plugin, settings):
     bundle = PLUGINS / f"{plugin}.vst3"
     if not bundle.exists():
         return getattr(pedalboard, plugin)(**settings)
-    # Dragonfly and Airwindows draw on the process-wide C rand(), so its state is fixed before every load.
+    # Dragonfly draws on the process-wide C rand(), so its state is fixed before every load.
     LIBC.srand(RAND_SEED)
     instance = pedalboard.load_plugin(str(bundle))
-    if "effect" in settings:
-        airwindows.select(instance, settings.pop("effect"))
     for name, value in settings.items():
         if name not in instance.parameters:
             raise ValueError(f"{plugin} has no parameter {name}")

@@ -12,14 +12,9 @@ import pedalboard._pedalboard
 import pedalboard_native
 
 WHITELIST = {
-    "TDR Kotelnikov": "1adbbd38e40c0e6a5c68fe252b3d93415be26f4b5d34f8e61318408fbe80dadd",
     "ZL Equalizer 2": "76ef9726b7f4fc984f4f37a54fd5518136e2b7bec0f64562387b1ff07d1fcb06",
     "ZL Limiter": "ba4bcfd2fc2add1babc505c0f7394046f3b65b5b217247a7e933bc1dd3eb8eb8",
-    "ZaMultiCompX2": "d5d5f1c4b03944b4c0450fa56de357792246cd1d8d2a9182c3b8c202c9a33d3d",
     "ZL Compressor": "77c6507314372908181a64f10a232cf2714870b0437acbf669373c0473838946",
-    "TDR Nova": "348b789f96792456e120b8885a6a5df27011d64a6c66feeb0b29cac947469dc8",
-    "TDR Molotok": "0054b5fecb3351f141c50cf635591ae99233a1f1ad332590d9ac22fc8c195658",
-    "TDR VOS SlickEQ": "34f622dd13c31c127e671f636bba42140705bf1d9472d1210c3117532c352638",
 }
 NORMAL_SETUP = pedalboard.VST3Plugin.__set_initial_parameter_values__
 MAX_ENTRIES = 128
