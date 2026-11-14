@@ -11,9 +11,9 @@ step() {
   "$@" || { echo "setup failed: $name" >&2; exit 1; }
 }
 
+export PATH="$PATH:$HOME/.local/bin"
 if ! command -v mise >/dev/null; then
   step "mise (into ~/.local/bin)" sh -c "curl -fsSL https://mise.run | sh"
-  export PATH="$HOME/.local/bin:$PATH"
 fi
 step "Python and uv (mise.toml)" mise install
 step "Python packages (uv.lock)" mise exec -- uv sync --locked
