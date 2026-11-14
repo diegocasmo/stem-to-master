@@ -22,7 +22,7 @@ OCTAVES = [31.5, 63, 125, 250, 500, 1000, 2000, 4000, 8000, 16000]
 THIRDS = [10000, 12500]
 WIDTH_BANDS = [(120, 500), (500, 2000), (2000, 8000)]
 MIN_SCORED_S = 8.0
-MIN_HITS = 8
+MIN_HITS = 15
 TOL = {"band": 2.0, "punch": 1.5, "width": 1.5}
 HISTORY = Path.home() / "stemmaster-scratch" / "night" / "grades.jsonl"
 
@@ -202,7 +202,7 @@ def grade(song, master_path=None):
 
     punch_keys = [k for k in ("kick_low", "kick_click", "snare_body", "snare_crack") if punch.get(k) is not None]
     strict = judge([v for v in bands.values() if v is not None], [(k, punch[k]) for k in punch_keys])
-    # A band scored on under 8 s, or a punch on under 8 hits, is reported but does not gate: 5 hits are not a measure.
+    # A band scored on under 8 s, or a punch on under 15 hits, is reported but does not gate (002: 9 masked hits read +4.5 dB, 109 unmasked hits +0.9).
     confident = judge([v for k, v in bands.items() if v is not None and scored[k] >= MIN_SCORED_S],
                       [(k, punch[k]) for k in punch_keys if raw[k][2] >= MIN_HITS])
     low_confidence = [k for k, v in bands.items() if v is not None and scored[k] < MIN_SCORED_S] + \
