@@ -1,94 +1,78 @@
 # Kick
 
-Goal: a tight low-end thump and a thin, clear click that both survive the master, even in fast double-kick runs.
+Goal: a tight low-end thump and a clear click that both survive the master, even in fast double-kick runs.
+
+### kick.align
+- **Why:** kick mics out of time or polarity cancel each other and thin the kick.
+- **Start:** the mic with the most 40-150 Hz is the reference. Each other mic, in that order, is checked against the sum of the ones before it, inside 0-100 ms of the reference's kick hits: polarity as recorded or flipped, offset 0 or the cross-correlation lag within ±6 ms.
+- **Tool:** track `invert`, `offset_samples`.
+- **Needed if:** the kick has two or more mics (sample stems excluded).
+- **Worked if:** the option with the highest sum gain in 40-150 Hz (rounded to 0.1 dB), then in 2-6 kHz, wins. Kept if it flips or moves the mic; else dropped as recorded.
 
 ### kick.blend
-- **Why:** each kick mic or sample holds a different part: the inside mic gives click, the outside mic body, the sub weight, the sample consistency. Their balance is most of the kick sound, and mics out of phase thin it.
-- **Start:** set each mic's level on its own. Check polarity and timing against the main kick mic and against the overheads. Sum to one kick bus and process the bus.
-- **Tool:** stem `gain_db`, `invert`, `offset_samples`.
-- **Needed if:** the kick has more than one mic or sample.
-- **Worked if:** at fixed levels, sum gain in 40-150 Hz and 2-6 kHz is the highest of the polarity and timing options tried, and attack rises at equal kick-bus loudness, in fast and sparse sections.
+- **Why:** each kick mic holds a different part (inside mic click, outside mic body). Their balance is most of the kick sound.
+- **Start:** the mic with the most 40-120 Hz at 0 dB; every other mic at 0, -4, -8, -12 dB or muted. A full grid for up to three mics, else one mic at a time in order.
+- **Tool:** track `fader_db` (a muted mic gets -60 dB).
+- **Needed if:** the kick has two or more mics (sample stems excluded).
+- **Worked if:** among blends whose kick low peak stays within 3 dB of the first mic alone, the highest score wins: low decay (minus the kick tail) plus 0.25 × click prominence. Logged kept only if another mic sits at -4, -8 or -12 dB; a blend that only mutes mics is applied but logged dropped.
 
-### kick.gate
-- **Why:** ringing and spill from other drums between kick hits blur the low end.
-- **Start:** gate or expand the kick bus. Threshold just under the softest real hit, fast attack, release shorter than the gap in the fastest double-kick run. Some engineers skip gating and keep the bleed; measure.
-- **Tool:** pedalboard `NoiseGate`; Airwindows `Gatelope`.
-- **Needed if:** off-hit bleed in the kick mics is within 25 dB of the hits, or the kick rings past 150 ms.
-- **Worked if:** off-hit bleed falls and every original hit keeps its attack: no lost soft hits.
+### kick.sample-blend
+- **Why:** a sample reinforces the hits it doubles only at the close mics' level.
+- **Start:** the sample's fader is the mics' median hit level minus the sample's, each on its own kick hits.
+- **Tool:** track `fader_db` on the sample stem.
+- **Needed if:** the kick has a sample stem, a mic, and at least 2 hits in each.
+- **Worked if:** always kept; it is a level match, not a trial.
 
-### kick.hpf
-- **Why:** sub energy below the thump is mud and wasted headroom in fast music.
-- **Start:** a steep high-pass at about 36 Hz.
-- **Tool:** `ZL Equalizer 2` (steep slopes); pedalboard `HighpassFilter` is only 6 dB/oct.
-- **Needed if:** the kick bus holds energy below 40 Hz within 6 dB of its 50-70 Hz.
-- **Worked if:** energy below 40 Hz falls, 50-70 Hz holds, and the trial limiter dips less on kick hits at equal loudness.
+### kick.tail
+- **Why:** a long low tail after each hit piles up in fast double-kick runs and blurs the low end.
+- **Start:** a hit-gated decay below 150 Hz on the kick bus: full level for 30 ms after a hit, then down over 40 ms. Depths 4, 8, 12, 18 dB; the smallest that reaches the target wins.
+- **Tool:** native `Shape` (`band_hz` [null, 150], `hold_ms` 30, `fade_ms` 40, `floor_db` 30).
+- **Needed if:** the kick bus's tail is above `KICK_TAIL_DB` -14 dB.
+- **Worked if:** the tail falls to `KICK_TAIL_DB` or below. If no depth reaches it, the 18 dB depth is kept when it shortens the tail by at least 2 dB ("kept: deepest, short of target").
+
+### kick.weight
+- **Why:** sets the weight felt on every speaker: the kick's own low peak against its boxy band.
+- **Start:** a bell at the kick bus's spectral peak in 50-100 Hz, +2 then +3 dB, Q 1.2.
+- **Tool:** `PeakFilter`.
+- **Needed if:** always tried.
+- **Worked if:** 45-110 Hz minus 200-400 Hz rises by at least 1 dB.
 
 ### kick.mud-cut
 - **Why:** 200-400 Hz is boxy. It hides the click and fights the guitars.
-- **Start:** a wide, deep cut somewhere in 200-400 Hz.
+- **Start:** -3 dB at 300 Hz, Q 1.0, on the kick bus.
 - **Tool:** `PeakFilter`.
-- **Needed if:** the kick's 200-400 Hz sits less than 6 dB under its 50-70 Hz, or holds a narrow peak.
-- **Worked if:** that energy falls and the mix's 250 Hz band moves toward the profile range.
-
-### kick.bass-room
-- **Why:** the kick and bass fight for 60-200 Hz. Deciding which owns which band makes both clearer.
-- **Start:** the kick owns 50-70 Hz. Cut the kick a few dB in 100-200 Hz where the bass lives, or at a measured build-up (one metal mix cut 3 dB at 130 Hz).
-- **Tool:** `PeakFilter`.
-- **Needed if:** the kick and bass overlap in 60-200 Hz on kick hits.
-- **Worked if:** overlap falls and both kick attack and bass level hold in the mix.
-
-### kick.thump
-- **Why:** sets the weight felt on small and large speakers. Lower thump gives more depth; higher gives more presence on small speakers but fights the bass more.
-- **Start:** low shelf, or a bell for a peakier sound, centred at 50-80 Hz.
-- **Tool:** `LowShelfFilter` or `PeakFilter`.
-- **Needed if:** the kick's 50-80 Hz sits below its 100-200 Hz in the blend.
-- **Worked if:** the mix's 63 Hz band moves toward the profile range without more limiter dip.
-
-### kick.click
-- **Why:** the click makes each hit audible in fast runs under dense guitars.
-- **Start:** boost at 6-10 kHz for slap, or 2-4 kHz if the attack is still buried. If it needs a lot, the guitars or cymbals are too bright instead; prefer shaping the attack with compression over large boosts.
-- **Tool:** `PeakFilter` or `HighShelfFilter`.
-- **Needed if:** in the first 25 ms of kick hits, the kick's 2-6 kHz energy is below the guitars' 2-6 kHz energy.
-- **Worked if:** that gap closes in the full mix at equal loudness, and cymbal and guitar levels hold.
-
-### kick.compress
-- **Why:** shapes punch. A slow attack lets the hit through, then the body is clamped.
-- **Start:** VCA-style, slow attack, moderately fast release, 4:1 to 8:1. A slower release ducks fast double-kick runs on purpose; use it only if runs pile up.
-- **Tool:** `TDR Kotelnikov`, `ZL Compressor`, `TDR Molotok`.
-- **Needed if:** attack is low after EQ, or hit levels spread more than 3 dB in a steady section.
-- **Worked if:** attack rises or hit spread falls, and gain recovers before the next hit in the fastest run (unless ducking the run was the aim).
-
-### kick.saturate
-- **Why:** harmonics make the kick read on small speakers, and rounded peaks save headroom.
-- **Start:** tape or console, light drive.
-- **Tool:** `CHOWTapeModel`, Airwindows `Console7Channel`, `T-Saturator`.
-- **Needed if:** always tried; drop it if it costs attack.
-- **Worked if:** at equal loudness, 100 Hz-1 kHz harmonics rise or limiter dip on kick hits falls, with no attack loss.
-
-### kick.transient
-- **Why:** adds attack when compression can't, without raising the bleed.
-- **Start:** raise `point` a little; `reaction_speed` sets how short a transient it catches. A last resort after blend and compression.
-- **Tool:** Airwindows `Point`.
-- **Needed if:** attack is still low after blend, EQ and compression.
-- **Worked if:** attack rises in the full mix and the valleys between hits hold.
-
-### kick.limit
-- **Why:** catches the odd hit that jumps out, so the master limiter doesn't react to it.
-- **Start:** brickwall, a few dB on the loudest hits only.
-- **Tool:** `ZL Limiter`, `Limiter`.
-- **Needed if:** some hits sit more than 3 dB over the median hit.
-- **Worked if:** those hits come down and the median hit's attack holds.
+- **Needed if:** the kick bus's 200-400 Hz is within 10 dB of its 50-100 Hz.
+- **Worked if:** 200-400 Hz falls by more than 0.5 dB and 50-100 Hz holds within 0.5 dB.
 
 ### kick.duck-bass
 - **Why:** dips the bass's low end only while the kick hits, so each owns the low end in turn without a static cut.
-- **Start:** key a band below about 120 Hz on the bass from the kick, a few dB, fast release.
-- **Tool:** `Duck` on the bass, keyed from the kick bus, `band_hz` [0, 120].
-- **Needed if:** after kick.bass-room, kick and bass still overlap below 120 Hz on kick hits.
-- **Worked if:** overlap on kick hits falls, bass level between hits recovers, and it beats a static cut of the same depth.
+- **Start:** below 150 Hz on the bass bus, keyed from the kick bus: threshold the kick's median hit level -15 dB, ratio 4, attack 1 ms, release 80 ms, range 3 then 6 dB.
+- **Tool:** native `Duck` (`key` kick, `band_hz` [null, 150]).
+- **Needed if:** the kick low prominence in the full mix is under `KICK_LOW_PROMINENCE` 12.5 dB.
+- **Worked if:** kick low prominence rises by at least 0.5 dB and the bass's 40-150 Hz between kick hits (outside 5 ms before to 150 ms after) falls by at most 1 dB. The deepest range that passes is kept.
 
-### kick.rides
-- **Why:** double-kick runs pile up low end and attack. A tone set on a normal section is too much there.
-- **Start:** set the base tone on a normal section. Automate a low shelf, a high shelf or the level down during dense runs.
-- **Tool:** `Ride` on the kick bus over the dense sections, with `band_hz` for a shelf or without it for level.
-- **Needed if:** short-term low-band loudness in double-kick sections (the highest kick hit rate) is more than 2 dB above normal sections.
-- **Worked if:** low-band loudness evens out between sections and kick attack holds.
+### kick.duck-gtr
+- **Why:** the guitars' lows can mask the kick too, once the bass makes room.
+- **Start:** as kick.duck-bass, on the guitar bus, judged with any kept bass duck in place.
+- **Tool:** native `Duck` (`key` kick, `band_hz` [null, 150]).
+- **Needed if:** the kick low prominence in the full mix (after the bass duck) is under `KICK_LOW_PROMINENCE` 12.5 dB.
+- **Worked if:** as kick.duck-bass, with the guitars' 40-150 Hz between kick hits.
+
+### kick.click
+- **Why:** the click makes each hit audible in fast runs under dense guitars.
+- **Start:** after the tone moves, a bell at 4 kHz, Q 0.8, on the kick bus: +2, +4, +6 dB, stopping at the first that reaches the rule.
+- **Tool:** `PeakFilter`.
+- **Needed if:** kick click prominence (2-6 kHz) in the full mix is under `KICK_CLICK_PROMINENCE` 5.0 dB.
+- **Worked if:** click prominence rises by at least 0.5 dB. The last gain that passed is kept.
+
+## Not built
+
+- kick.gate: kick.tail shortens the low tail instead, and bleed has not needed a gate.
+- kick.hpf: kick sub is handled by sub.cut (context.md) on the kick bus.
+- kick.bass-room: the low-mid cut on its owner (lowmid.cut) and the ducks cover it.
+- kick.thump: kick.weight is the low boost the engineer makes.
+- kick.compress: no song needed it yet.
+- kick.saturate: no song needed it yet.
+- kick.transient: no song needed it yet.
+- kick.limit: no song needed it yet.
+- kick.rides: no song needed it yet.

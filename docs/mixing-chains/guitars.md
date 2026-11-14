@@ -2,93 +2,50 @@
 
 Goal: wide, heavy, tight rhythm guitars that leave room for the kick, bass, snare crack and leads; leads that sit on top.
 
-### guitars.align
-- **Why:** two mics or amps that capture the same take comb-filter when they are out of time or polarity. Separate takes (double tracks) are never aligned to each other.
-- **Start:** align the tracks of one take to the first of them and check polarity.
-- **Tool:** stem `offset_samples`, `invert`.
-- **Needed if:** two or more audible tracks capture the same take.
-- **Worked if:** at fixed levels, their sum gain in 100 Hz-2 kHz is the highest of the offsets and polarities tried.
-
-### guitars.pair
-- **Why:** double-tracked rhythms panned hard left and right make the width. Unequal levels pull the image to one side.
-- **Start:** main pair hard left and right at equal loudness. Extra layers lower, or panned nearer the centre.
-- **Tool:** stem `gain_db`, `pan`.
-- **Needed if:** the song has more than one rhythm guitar track.
-- **Worked if:** left and right guitar loudness differ by under 1 dB, and the mix's width is in the profile range.
-
-### guitars.side-tones
-- **Why:** slightly different tones left and right sound wider than the same tone twice.
-- **Start:** a different EQ on each side: for example, cut some mids on one side and boost them on the other.
-- **Tool:** `PeakFilter` per stem.
-- **Needed if:** the left and right guitars' spectra match within 1 dB in every octave.
-- **Worked if:** the mix's side energy in 500 Hz-4 kHz rises, mono loudness holds, and left and right loudness still match within 1 dB.
+### guitars.pan
+- **Why:** double-tracked rhythms panned hard left and right make the width; a part with no double belongs in the middle.
+- **Start:** among mono guitar tracks, a pair whose names mark a double track (`DT` suffix, same base name) pairs first; then pairs whose 50 ms level envelopes correlate at 0.75 or more, highest first. Each pair goes to -1 and +1; the rest stay at 0.
+- **Tool:** track `pan`.
+- **Needed if:** always run on the guitar group.
+- **Worked if:** always kept; the log lists pairs, correlations and centred parts.
 
 ### guitars.filters
-- **Why:** guitar lows fight the kick and bass; highs above 10 kHz are fizz.
-- **Start:** a 24 dB/oct high-pass from about 60 Hz, raised (up to 140 Hz) only while 80-120 Hz on palm mutes holds within 1 dB; gentle low-pass at 6-12 kHz. A hard low cut can kill the "chug"; some engineers use a shelf instead.
-- **Tool:** `ZL Equalizer 2` for the high-pass; `LowpassFilter` for the gentle low-pass.
-- **Needed if:** guitars overlap the kick and bass below 120 Hz, or hold fizz above 10 kHz.
-- **Worked if:** that overlap and fizz fall, and 80-120 Hz on palm mutes holds within 1 dB.
+- **Why:** guitar lows fight the kick and bass. A hard low cut can kill the chug, so the cutoff is the highest that keeps it.
+- **Start:** a 24 dB/oct high-pass at 100, 80 or 60 Hz: the highest that keeps 80-120 Hz within 1 dB. Only that one is tried.
+- **Tool:** `ZL Equalizer 2`.
+- **Needed if:** always tried on each guitar track.
+- **Worked if:** 20-70 Hz falls by more than 0.5 dB and 80-120 Hz holds within 1 dB. No cutoff holding 80-120 Hz means dropped.
 
 ### guitars.resonance
-- **Why:** cab and room resonances (100-250 Hz) and fizz nodes (above 4 kHz) make guitars boomy or harsh. A note's fundamental is not a resonance.
-- **Start:** narrow cuts on peaks found by a tight sweep, keeping a little 70-90 Hz thump.
-- **Tool:** `PeakFilter`, `ZL Equalizer 2`.
-- **Needed if:** a narrow peak rises more than 6 dB over its neighbours and stays across different notes.
-- **Worked if:** the peak falls and the guitars' level holds.
+- **Why:** cab and room resonances make guitars boomy or harsh, but a note's fundamental is not a resonance.
+- **Start:** nothing is tried: a notch found on the long-term spectrum is not validated across notes.
+- **Tool:** none.
+- **Needed if:** never tried; logged for each guitar track.
+- **Worked if:** never kept ("dropped: not tried").
 
-### guitars.mud-cut
-- **Why:** broad build-ups make guitars woolly (200-500 Hz) or papery (600-800 Hz).
-- **Start:** a wide cut at 200-500 Hz; a cut at 600-800 Hz (as low as 500 Hz) if cardboard. Cut more than you'd boost: distorted guitars rarely need boosts.
-- **Tool:** `PeakFilter`.
-- **Needed if:** the mix's 250 Hz or 500 Hz band is over the profile range, or guitars and bass overlap in 150-500 Hz.
-- **Worked if:** that band moves into range and the guitars' 1-4 kHz level holds.
+### guitars.pair
+- **Why:** unequal levels in a double-tracked pair pull the image to one side.
+- **Start:** each pair from guitars.pan: left and right loudness over the full-band frames; each fader moves half the difference.
+- **Tool:** track `fader_db`.
+- **Needed if:** guitars.pan found a pair.
+- **Worked if:** always kept; it is a level match, not a trial.
 
-### guitars.multiband
-- **Why:** palm mutes bloom in the lows. A multiband on 70-250 Hz holds them without dulling open chords.
-- **Start:** one band about 80-260 Hz, fast-to-medium attack, quick release, up to 8 dB.
-- **Tool:** `ZaMultiCompX2`, `TDR Nova`.
-- **Needed if:** 80-260 Hz loudness spreads more than 4 dB between palm mutes and open chords.
-- **Worked if:** that spread falls and the chug holds.
+### guitars.lead-space
+- **Why:** a lead or melody that plays alone in the middle needs its own space to sit above the rhythms.
+- **Start:** a `gtr-space` bus with a plate (Nested, width 100, pre-delay 30 ms, decay 1.4 s, low cut 200 Hz, high cut 8 kHz, dampen 6 kHz, wet only). Sends from the centred guitars at -16, -12, -8, -4 dB.
+- **Tool:** `DragonflyPlateReverb` on a bus fed by sends.
+- **Needed if:** a guitar panned at 0 (stereo ones only if their side/mid is -10 dB or less) plays within 30 dB of its peak in at least half the full-band frames.
+- **Worked if:** the full mix's 500 Hz-2 kHz side/mid rises by at least 0.5 dB and that band's level by at most 1 dB. Sends rise until it widens by 1.5 dB or a send fails after one passed; the last passing send is kept, else the bus is removed.
 
-### guitars.mirror-eq
-- **Why:** guitars and bass share the mids. Boosting one where the other is cut lets both be heard.
-- **Start:** where the bass is cut, boost the guitars near it; where the bass is boosted, cut the guitars. One mix cut the bass at 1.4 kHz and boosted the guitars at 1.1 kHz.
-- **Tool:** `PeakFilter`.
-- **Needed if:** bass.growl is kept, or bass and guitars overlap in 700 Hz-3 kHz.
-- **Worked if:** overlap falls and both keep their level in the mix.
+## Not built
 
-### guitars.lead-room
-- **Why:** 2-4 kHz is where leads, snare crack and kick click compete with the rhythms.
-- **Start:** cut 2-4 kHz on the rhythms a few dB, or duck them there while a lead plays.
-- **Tool:** `PeakFilter`; or `Duck` on the rhythm bus keyed from the lead, `band_hz` [2000, 4000].
-- **Needed if:** kick or snare 2-5 kHz energy in the first 25 ms of hits, or a lead's 2-4 kHz, is below the rhythms' in the same moments.
-- **Worked if:** that gap closes and the rhythms' 2-4 kHz level away from hits and leads holds.
-
-### guitars.compress
-- **Why:** distorted guitars are already compressed. Broad compression makes them fizzier and harsher; it rarely helps.
-- **Start:** none by default. If tried: unlinked left and right (linked narrows the image), a few dB.
-- **Tool:** `ZL Compressor`.
-- **Needed if:** guitar level spreads more than 3 dB within a section after rides.
-- **Worked if:** spread falls with no rise in 4-8 kHz.
-
-### guitars.saturate
-- **Why:** tape or console saturation smooths, fattens and controls distorted guitars.
-- **Start:** 15 ips tape or console, driven fairly hot.
-- **Tool:** `CHOWTapeModel`, Airwindows `ToTape6`, `Console7Channel`.
-- **Needed if:** always tried; drop it if it adds harshness.
-- **Worked if:** at equal loudness, 4-8 kHz doesn't rise and the guitars' peaks fall.
-
-### guitars.rides
-- **Why:** guitars that suit a verse can bury a chorus or a lead.
-- **Start:** ride the guitar bus by section.
-- **Tool:** `Ride` on the guitar bus.
-- **Needed if:** the guitars-to-rest loudness ratio changes more than 2 dB between sections the recipe marks as equal (same `group`).
-- **Worked if:** the ratio stays within 2 dB across those sections.
-
-### guitars.lead
-- **Why:** a lead must sit above the rhythms and have its own space.
-- **Start:** high-pass up to 160 Hz, a little more mids, smooth compression. A tempo delay on a send with its return filtered dark, and a short reverb with pre-delay.
-- **Tool:** `HighpassFilter`, `LowpassFilter`, `MJUCjr`; `Delay` (`mix` 1) and `DragonflyHallReverb` (`dry_level` 0) on buses fed by sends.
-- **Needed if:** the song has a lead guitar.
-- **Worked if:** the lead's 1-4 kHz energy sits above the rhythms' while it plays, and its delay return's tail in the 2 s after each phrase, as heard in the mix, is within 30 dB of the dry lead.
+- guitars.align: not built yet; separate takes are never aligned to each other.
+- guitars.side-tones: no song needed it yet.
+- guitars.mud-cut: lowmid.cut (context.md) cuts a build-up on the guitars when they own it.
+- guitars.multiband: no song needed it yet.
+- guitars.mirror-eq: there is no bass growl move to mirror.
+- guitars.lead-room: presence (context.md) and the click and crack boosts handle 2-4 kHz instead.
+- guitars.compress: no song needed it yet.
+- guitars.saturate: no song needed it yet.
+- guitars.rides: songs have no marked sections.
+- guitars.lead: guitars.lead-space is the only lead move.
