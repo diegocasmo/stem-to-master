@@ -16,66 +16,17 @@ import soundfile
 from scipy import signal
 
 import hits as hitlib
+from punch import bandpass, db, env, prominence, side_mid, tail
 
 OCTAVES = [31.5, 63, 125, 250, 500, 1000, 2000, 4000, 8000, 16000]
 THIRDS = [10000, 12500]
 WIDTH_BANDS = [(120, 500), (500, 2000), (2000, 8000)]
-ENV_S = 220 / 44100
 TOL = {"band": 2.0, "punch": 1.5, "width": 1.5}
 HISTORY = Path.home() / "stemmaster-scratch" / "night" / "grades.jsonl"
 
 
-def db(x):
-    return 10 * math.log10(max(float(x), 1e-25))
-
-
 def r2(x):
     return None if x is None else round(float(x), 2)
-
-
-def bandpass(x, rate, low, high):
-    high = min(high, rate / 2 * 0.98)
-    sos = signal.butter(4, [low, high], "bandpass", fs=rate, output="sos")
-    return signal.sosfiltfilt(sos, x, axis=-1)
-
-
-def env(x, rate):
-    """Band power in 5 ms frames, summed over channels."""
-    hop = round(ENV_S * rate)
-    power = (x**2).sum(axis=0)
-    count = len(power) // hop
-    return power[: count * hop].reshape(count, hop).mean(axis=1)
-
-
-def prominence(e, times_s, attack=(-0.030, 0.040), around=((-0.130, -0.050), (0.070, 0.150))):
-    """Per hit: the band's smoothed peak in the attack window over the median of the surrounding windows (dB)."""
-    t = (np.arange(len(e)) + 0.5) * ENV_S
-    out = []
-    for h in times_s:
-        a = (t >= h + attack[0]) & (t < h + attack[1])
-        s = ((t >= h + around[0][0]) & (t < h + around[0][1])) | ((t >= h + around[1][0]) & (t < h + around[1][1]))
-        if a.sum() < 3 or s.sum() < 3:
-            out.append(np.nan)
-            continue
-        peak = np.convolve(e[a], np.ones(2) / 2, mode="valid").max()
-        out.append(db(peak) - db(np.median(e[s])))
-    return np.array(out)
-
-
-def tail(e, times_s):
-    """Per hit: band level 80-180 ms after the hit relative to its attack peak (dB); higher is a longer tail."""
-    t = (np.arange(len(e)) + 0.5) * ENV_S
-    out = []
-    for h in times_s:
-        a = (t >= h - 0.01) & (t < h + 0.04)
-        late = (t >= h + 0.08) & (t < h + 0.18)
-        out.append(db(e[late].mean()) - db(e[a].max()) if a.any() and late.any() else np.nan)
-    return np.array(out)
-
-
-def side_mid(x):
-    mid, side = (x[0] + x[1]) / 2, (x[0] - x[1]) / 2
-    return db((side**2).sum()) - db((mid**2).sum())
 
 
 def stem_hits(song, chain, rate, length):
@@ -89,12 +40,57 @@ def stem_hits(song, chain, rate, length):
     return hitlib.detect(total, rate) / rate
 
 
-def align(ours, official, mask, rate, reach_s=0.05):
-    a = np.where(mask, ours.mean(axis=0), 0)
-    b = np.where(mask, official.mean(axis=0), 0)
+def align(ours, official, rate, reach_s=0.05):
+    a, b = ours.mean(axis=0), official.mean(axis=0)
     reach = int(reach_s * rate)
     corr = signal.correlate(b[reach:-reach], a, mode="valid", method="fft")
     return int(np.argmax(np.abs(corr))) - reach
+
+
+THIRD_CENTERS = [31.5 * 2 ** (k / 3) for k in range(-2, 28)]  # 25 Hz to 16 kHz
+HOP_S = 0.1
+NFFT = 8192
+
+
+def cells(x, rate):
+    """Power per (third-octave band, 0.1 s frame), summed over channels."""
+    hop = int(HOP_S * rate)
+    f, _, z = signal.stft(x, rate, nperseg=NFFT, noverlap=NFFT - hop, boundary=None, padded=False, axis=-1)
+    power = (np.abs(z) ** 2).sum(axis=0) if z.ndim == 3 else np.abs(z) ** 2
+    rows = [power[(f >= c / 2 ** (1 / 6)) & (f < c * 2 ** (1 / 6))].sum(axis=0) for c in THIRD_CENTERS]
+    return np.array(rows), f, z
+
+
+def k_weights(freqs, rate):
+    meter = pyloudnorm.Meter(rate)
+    w = np.ones(len(freqs))
+    for stage in meter._filters.values():
+        _, h = signal.freqz(stage.b, stage.a, worN=freqs, fs=rate)
+        w *= np.abs(h) ** 2
+    return w
+
+
+def vocal_mask(song, notes, rate, length, frames):
+    """True where a cell is scored: the raw vocal stems are >= 15 dB under the raw instrument stems there."""
+    folder = song / "vocals"
+    vocal_files = sorted(folder.glob("*.wav")) if folder.exists() else []
+    if not vocal_files:
+        mask = np.zeros((len(THIRD_CENTERS), frames), bool)
+        t = (np.arange(frames) * HOP_S) + NFFT / rate / 2
+        for a, b in notes["graded_spans_s"]:
+            mask[:, (t >= a) & (t <= b)] = True
+        return mask
+
+    def summed(files):
+        total = np.zeros(length)
+        for path in files:
+            x = soundfile.read(path, always_2d=True, dtype="float64")[0]
+            total[: len(x)] += x.mean(axis=1)[:length]
+        return total
+
+    voice, _, _ = cells(summed(vocal_files), rate)
+    band, _, _ = cells(summed(sorted((song / "stems").glob("*.wav"))), rate)
+    return 10 * np.log10(voice + 1e-20) <= 10 * np.log10(band + 1e-20) - 15
 
 
 def grade(song, master_path=None):
@@ -105,102 +101,108 @@ def grade(song, master_path=None):
     assert rate == orate
     length = min(len(ours), len(official))
     ours, official = ours[:length].T, official[:length].T
-    mask = np.zeros(length, bool)
-    spans = notes["graded_spans_s"]
-    for a, b in spans:
-        mask[round(a * rate) : round(b * rate)] = True
-    lag = align(ours, official, mask, rate)
+    lag = align(ours, official, rate)
     # official[t + lag] matches ours[t]: shift the official onto our clock.
     official = np.roll(official, -lag, axis=1)
+    co, freqs, zo = cells(ours, rate)
+    cf, _, zf = cells(official, rate)
+    frames = co.shape[1]
+    mask = vocal_mask(song, notes, rate, length, frames)[:, :frames]
+    # Loudness match on the scored cells only, K-weighted per bin.
+    kw = k_weights(freqs, rate)
+    def k_cells(z):
+        p = ((np.abs(z) ** 2).sum(axis=0)) * kw[:, None]
+        return np.array([p[(freqs >= c / 2 ** (1 / 6)) & (freqs < c * 2 ** (1 / 6))].sum(axis=0) for c in THIRD_CENTERS])
+    ko, kf = k_cells(zo), k_cells(zf)
+    gain_db = db(kf[mask].sum()) - db(ko[mask].sum())
+    g = 10 ** (gain_db / 10)
+    ours = ours * 10 ** (gain_db / 20)
+    co = co * g
+    centers = np.array(THIRD_CENTERS)
 
-    meter = pyloudnorm.Meter(rate)
-    joined = lambda x: np.concatenate([x[:, round(a * rate) : round(b * rate)] for a, b in spans], axis=1)
-    l_ours, l_off = meter.integrated_loudness(joined(ours).T), meter.integrated_loudness(joined(official).T)
-    ours = ours * 10 ** ((l_off - l_ours) / 20)
-    jo, jf = joined(ours), joined(official)
+    def band_gap(lo, hi):
+        rows = (centers >= lo) & (centers < hi)
+        m = mask[rows]
+        if not m.any():
+            return None, 0.0
+        return db(co[rows][m].sum()) - db(cf[rows][m].sum()), float(m.any(axis=0).sum()) * HOP_S
 
-    def spec(x):
-        f, p = signal.welch(x, rate, nperseg=16384, axis=-1)
-        return f, p.mean(axis=0)
-
-    fo, po = spec(jo)
-    _, pf = spec(jf)
-
-    def band(p, lo, hi):
-        return db(p[(fo >= lo) & (fo < hi)].sum())
-
-    bands = {}
+    bands, scored = {}, {}
     for c in OCTAVES:
-        lo, hi = c / 2**0.5, min(c * 2**0.5, rate / 2)
-        bands[str(c)] = r2(band(po, lo, hi) - band(pf, lo, hi))
-    thirds = {str(c): r2(band(po, c / 2 ** (1 / 6), c * 2 ** (1 / 6)) - band(pf, c / 2 ** (1 / 6), c * 2 ** (1 / 6))) for c in THIRDS}
-    low_thirds = {str(c): r2(band(po, c / 2 ** (1 / 6), c * 2 ** (1 / 6)) - band(pf, c / 2 ** (1 / 6), c * 2 ** (1 / 6)))
-                  for c in (40, 50, 63, 80, 100, 125, 160, 200, 250)}
+        gap, secs = band_gap(c / 2 ** 0.5, c * 2 ** 0.5)
+        bands[str(c)], scored[str(c)] = r2(gap), round(secs, 1)
+    thirds = {str(c): r2(band_gap(c / 2 ** (1 / 6), c * 2 ** (1 / 6))[0]) for c in THIRDS}
+    low_thirds = {str(c): r2(band_gap(c / 2 ** (1 / 6), c * 2 ** (1 / 6))[0]) for c in (40, 50, 63, 80, 100, 125, 160, 200, 250)}
 
-    width = {"all": r2(side_mid(jo) - side_mid(jf))}
-    width_abs = {"all": [r2(side_mid(jo)), r2(side_mid(jf))]}
-    for lo, hi in WIDTH_BANDS:
-        so, sf = side_mid(bandpass(jo, rate, lo, hi)), side_mid(bandpass(jf, rate, lo, hi))
-        width[f"{lo}-{hi}"] = r2(so - sf)
-        width_abs[f"{lo}-{hi}"] = [r2(so), r2(sf)]
+    # Width from the side channel, which carries almost no vocal: side level per band, ours minus official.
+    so, _, _ = cells((ours[0] - ours[1]) / 2, rate)
+    sf, _, _ = cells((official[0] - official[1]) / 2, rate)
+    mo, _, _ = cells((ours[0] + ours[1]) / 2, rate)
+    mf, _, _ = cells((official[0] + official[1]) / 2, rate)
+    width, width_abs = {}, {}
+    for lo, hi in [(120, 16000)] + WIDTH_BANDS:
+        rows = (centers >= lo) & (centers < hi)
+        m = mask[rows]
+        key = "all" if (lo, hi) == (120, 16000) else f"{lo}-{hi}"
+        width[key] = r2(db(so[rows][m].sum()) - db(sf[rows][m].sum()))
+        width_abs[key] = [r2(db(so[rows][m].sum()) - db(mo[rows][m].sum())), r2(db(sf[rows][m].sum()) - db(mf[rows][m].sum()))]
 
-    def in_spans(times, edge=0.2):
-        return np.array([t for t in times if any(a + edge <= t <= b - edge for a, b in spans)])
+    def scored_hits(times, lo, hi):
+        rows = (centers * 2 ** (1 / 6) > lo) & (centers / 2 ** (1 / 6) < hi)
+        ok = mask[rows].all(axis=0)
+        t = np.arange(frames) * HOP_S + NFFT / rate / 2
+        keep = []
+        for h in times:
+            near = np.abs(t - h) <= 0.2
+            if near.any() and ok[near].all() and 0.2 < h < length / rate - 0.2:
+                keep.append(h)
+        return np.array(keep)
 
     punch, raw = {}, {}
     for drum, bands_hz in (("kick", {"low": (40, 120), "click": (2000, 6000)}), ("snare", {"body": (150, 350), "crack": (2000, 8000)})):
-        times = in_spans(stem_hits(song, drum, rate, length))
+        all_times = stem_hits(song, drum, rate, length)
         for name, (lo, hi) in bands_hz.items():
+            times = scored_hits(all_times, lo, hi)
             eo, ef = env(bandpass(ours, rate, lo, hi), rate), env(bandpass(official, rate, lo, hi), rate)
             po_, pf_ = prominence(eo, times), prominence(ef, times)
             d = po_ - pf_
-            punch[f"{drum}_{name}"] = r2(np.nanmedian(d)) if np.isfinite(d).any() else None
-            raw[f"{drum}_{name}"] = [r2(np.nanmedian(po_)), r2(np.nanmedian(pf_)), int(np.isfinite(d).sum())]
-            if drum == "kick" and name == "low":
+            ok = np.isfinite(d).sum() >= 4
+            punch[f"{drum}_{name}"] = r2(np.nanmedian(d)) if ok else None
+            raw[f"{drum}_{name}"] = [r2(np.nanmedian(po_)) if ok else None, r2(np.nanmedian(pf_)) if ok else None, int(np.isfinite(d).sum())]
+            if drum == "kick" and name == "low" and ok:
                 to, tf = tail(eo, times), tail(ef, times)
                 punch["kick_low_tail"] = r2(np.nanmedian(to - tf))
                 raw["kick_low_tail"] = [r2(np.nanmedian(to)), r2(np.nanmedian(tf))]
 
-    # Guitar low-mid: 125-250 Hz relative to the whole, away from kick and snare hits, where guitars and bass dominate.
-    hits_all = np.concatenate([stem_hits(song, "kick", rate, length), stem_hits(song, "snare", rate, length)])
-    off = mask.copy()
-    for h in hits_all:
-        off[max(0, round((h - 0.01) * rate)) : round((h + 0.15) * rate)] = False
-
-    def rel_lowmid(x):
-        seg = x[:, off]
-        return db((bandpass(seg, rate, 125, 250) ** 2).sum()) - db((seg**2).sum())
-
-    lowmid = r2(rel_lowmid(ours) - rel_lowmid(official)) if off.sum() > rate else None
-
+    lowmid = low_thirds["160"]
     def crest(x):
-        frames = env(x, rate)
-        return db(np.percentile(frames, 99.5)) - db(frames.mean())
-
-    crest_gap = r2(crest(jo) - crest(jf))
-    gates = {"bands": max(abs(v) for v in bands.values()) <= TOL["band"],
-             "kick": all(abs(punch[k]) <= TOL["punch"] for k in ("kick_low", "kick_click") if punch[k] is not None),
-             "snare": all(abs(punch[k]) <= TOL["punch"] for k in ("snare_body", "snare_crack") if punch[k] is not None),
+        frames_ = env(x, rate)
+        return db(np.percentile(frames_, 99.5)) - db(frames_.mean())
+    crest_gap = r2(crest(ours) - crest(official))
+    punch_keys = [k for k in ("kick_low", "kick_click", "snare_body", "snare_crack") if punch.get(k) is not None]
+    band_vals = [v for v in bands.values() if v is not None]
+    gates = {"bands": max(abs(v) for v in band_vals) <= TOL["band"],
+             "kick": all(abs(punch[k]) <= TOL["punch"] for k in punch_keys if k.startswith("kick")),
+             "snare": all(abs(punch[k]) <= TOL["punch"] for k in punch_keys if k.startswith("snare")),
              "width": all(abs(v) <= TOL["width"] for v in width.values())}
-    excess = (sum(max(0, abs(v) - TOL["band"]) for v in bands.values())
-              + sum(max(0, abs(punch[k]) - TOL["punch"]) for k in ("kick_low", "kick_click", "snare_body", "snare_crack") if punch[k] is not None)
+    excess = (sum(max(0, abs(v) - TOL["band"]) for v in band_vals)
+              + sum(max(0, abs(punch[k]) - TOL["punch"]) for k in punch_keys)
               + sum(max(0, abs(v) - TOL["width"]) for v in width.values()))
-    total = (sum(abs(v) for v in bands.values()) / TOL["band"]
-             + sum(abs(punch[k]) for k in ("kick_low", "kick_click", "snare_body", "snare_crack") if punch[k] is not None) / TOL["punch"]
+    total = (sum(abs(v) for v in band_vals) / TOL["band"] + sum(abs(punch[k]) for k in punch_keys) / TOL["punch"]
              + sum(abs(v) for v in width.values()) / TOL["width"])
-    return {"song": song.name, "graded_s": round(float(mask.sum()) / rate, 1), "align_lag_samples": lag,
-            "lufs_ours_official": [r2(l_ours), r2(l_off)], "bands": bands, "thirds": thirds, "low_thirds": low_thirds,
-            "punch": punch, "punch_raw_ours_official_n": raw, "width": width, "width_abs_ours_official": width_abs,
-            "guitar_lowmid_125_250": lowmid, "crest": crest_gap, "gates": gates, "pass": all(gates.values()),
+    return {"song": song.name, "scored_s_by_octave": scored, "align_lag_samples": lag, "match_gain_db": r2(gain_db),
+            "bands": bands, "thirds": thirds, "low_thirds": low_thirds,
+            "punch": punch, "punch_raw_ours_official_n": raw, "width": width, "side_mid_ours_official": width_abs,
+            "lowmid_160": lowmid, "crest": crest_gap, "gates": gates, "pass": all(gates.values()),
             "excess": r2(excess), "total": r2(total)}
 
 
 def line(g):
-    b = " ".join(f"{k}:{v:+.1f}" for k, v in g["bands"].items())
+    b = " ".join(f"{k}:{v:+.1f}" if v is not None else f"{k}:-" for k, v in g["bands"].items())
     p = " ".join(f"{k}:{v:+.1f}" for k, v in g["punch"].items() if v is not None)
     w = " ".join(f"{k}:{v:+.1f}" for k, v in g["width"].items())
     return (f"{g['song'][:24]:24s} pass={g['pass']!s:5s} excess={g['excess']:5.1f} total={g['total']:5.1f}\n"
-            f"  bands {b}\n  hi-thirds {g['thirds']}  lowmid {g['guitar_lowmid_125_250']}  crest {g['crest']}\n"
+            f"  bands {b}\n  scored_s {g['scored_s_by_octave']}\n  hi-thirds {g['thirds']}  lowmid160 {g['lowmid_160']}  crest {g['crest']}\n"
             f"  punch {p}\n  width {w}")
 
 

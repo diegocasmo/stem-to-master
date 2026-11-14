@@ -115,18 +115,19 @@ def main():
     graded = band & ~voice & covered
     span = int(args.length * 10)
     if args.start is None:
-        counts = np.convolve(graded.astype(int), np.ones(span, int), mode="valid")
+        # Best full-band stretch, vocals allowed: the grader masks them per band and frame.
+        counts = np.convolve((band & covered).astype(int), np.ones(span, int), mode="valid")
         start_frame = int(np.argmax(counts))
     else:
         start_frame = int(round(args.start * 10))
     start = start_frame * HOP
     length = int(round(args.length * rate))
-    # Alignment and its drift check use only the graded samples: elsewhere the official carries vocals.
+    # Alignment and its drift check use the vocal-free full-band samples of the whole song: elsewhere the official carries vocals.
     sample_mask = np.repeat(graded, HOP)[:total]
     sample_mask = np.concatenate([sample_mask, np.zeros(total - len(sample_mask), bool)])
     inside = np.zeros(total, bool)
     inside[start : start + length] = True
-    use = sample_mask & inside
+    use = sample_mask
     fine = coarse + _fine(np.where(use, mix, 0), off_mono, coarse, int(0.05 * rate))
     where = np.flatnonzero(use)
     thirds = []
@@ -148,6 +149,14 @@ def main():
             continue
         soundfile.write(song / "stems" / f.name, cut, rate, subtype="PCM_24")
         written.append(f.name)
+    (song / "vocals").mkdir(exist_ok=True)
+    for f in vocals:
+        x, _ = audio[f]
+        cut = np.zeros((length, x.shape[1]), np.float32)
+        piece = x[start : start + length]
+        cut[: len(piece)] = piece
+        if np.abs(cut).max() >= 10 ** (SILENT_DB / 20):
+            soundfile.write(song / "vocals" / f.name, cut, rate, subtype="PCM_24")
     o_start = start + fine
     cut = np.zeros((length, official.shape[1]), np.float32)
     piece = official[max(o_start, 0) : o_start + length]
@@ -167,6 +176,7 @@ def main():
         "silent_in_window": silent,
         "stems": written,
         "core": {k: round(float(v[window].mean()), 2) for k, v in core.items()},
+        "full_band_fraction": round(float(band[window].mean()), 2),
         "graded_spans_s": runs(graded[window]),
         "graded_s": round(float(graded[window].sum()) / 10, 1),
         "why_graded_spans": "no 45 s of the song has every vocal stem silent; the grader scores only the spans where all "
