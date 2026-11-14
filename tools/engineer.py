@@ -438,6 +438,8 @@ class Engineer:
     # Genre rules, the same for every song: hit prominence in the mix (dB) the faders aim for, the kick's low decay,
     # the low-mid build-up and the air tilt that trigger a move, and the master's limits on punch loss.
     KICK_LOW_PROMINENCE = 12.5
+    MASTER_KICK_PROMINENCE = 10.0
+    MASTER_SNARE_PROMINENCE = 12.5
     SNARE_BODY_PROMINENCE = 14.0
     KICK_TAIL_DB = -14.0
     LOWMID_BUILDUP_DB = 2.5
@@ -655,7 +657,7 @@ class Engineer:
             mics.sort(key=lambda t: -low(t))
             ref = self.raw(mics[0])[0].astype(np.float64)
             rkey, _ = daw.stem_source(self.song, mics[0], self.length)
-            times = meters.detect_hits(ref[None], self.rate)
+            times = (punchlib.drum_hits(ref[None], self.rate, group) * self.rate).astype(int)
             inside = meters.windows(len(ref), times, self.rate, (0, 100))
             running = ref.copy()
             for t in mics[1:]:
@@ -741,11 +743,11 @@ class Engineer:
         mics = [t for t in self.tracks_of(group) if not t["sample"]]
         for s in [t for t in self.tracks_of(group) if t["sample"]]:
             sample = mixer.node_audio(s["name"])
-            st = meters.detect_hits(sample, self.rate)
+            st = (punchlib.drum_hits(sample, self.rate, group) * self.rate).astype(int)
             if not mics or len(st) < 2:
                 continue
             total = sum(daw.pan_gain(mixer.node_audio(t["name"]), t["fader_db"], t["pan"]) for t in mics).astype(np.float32)
-            mt = meters.detect_hits(total, self.rate)
+            mt = (punchlib.drum_hits(total, self.rate, group) * self.rate).astype(int)
             if len(mt) < 2:
                 continue
             gain = round(self.hit_level(total, mt) - self.hit_level(sample, st), 2)
@@ -792,7 +794,7 @@ class Engineer:
         if len(mics) >= 2:
             mics.sort(key=lambda t: -meters.band_db(meters.spectrum(mixer.node_audio(t["name"]), self.rate), 40, 120))
             ref = mixer.node_audio(mics[0]["name"]).astype(np.float64)
-            times = meters.detect_hits(ref, self.rate) / self.rate
+            times = punchlib.drum_hits(ref, self.rate, "kick")
             base = None
 
             def score(total):
@@ -819,7 +821,7 @@ class Engineer:
         if len(mics) >= 2:
             mics.sort(key=lambda t: -meters.band_db(meters.spectrum(mixer.node_audio(t["name"]), self.rate), 150, 350))
             ref = mixer.node_audio(mics[0]["name"]).astype(np.float64)
-            times = meters.detect_hits(ref, self.rate) / self.rate
+            times = punchlib.drum_hits(ref, self.rate, "snare")
             base = {}
 
             def score(total):
@@ -875,7 +877,7 @@ class Engineer:
         audio, key = mixer.summed("kick", self.recipe["tracks"] + self.recipe["buses"])
         audio = audio.astype(np.float32)
         node = Node("kick", audio, key, self.cache, self.rate, {})
-        times = meters.detect_hits(audio, self.rate) / self.rate
+        times = punchlib.drum_hits(audio, self.rate, "kick")
         before = punch_of(audio, self.rate, times, [])
         numbers = {"kick_tail_db": before.get("kick_tail"), "target_db": self.KICK_TAIL_DB}
         cands = [{"plugin": "Shape", "settings": {"band_hz": [None, 150], "hold_ms": 30.0, "fade_ms": 40.0, "depth_db": d, "floor_db": 30}}
@@ -934,6 +936,7 @@ class Engineer:
             self.bus(name)["fader_db"] = round(target + level_ref - level, 2)
             self.log("balance.fader", name, "kept", {"bus_lufs": r2(level), "reference": ref, "reference_lufs": r2(level_ref),
                                                     "target_lu": target, "fader_db": self.bus(name)["fader_db"]})
+        self.static_faders = {b["name"]: b["fader_db"] for b in self.recipe["buses"]}
         if self.has("toms"):
             toms = mixer.node_audio("toms")
             times = meters.detect_hits(toms, self.rate)
@@ -945,28 +948,36 @@ class Engineer:
                                                            "fader_db": self.bus("toms")["fader_db"]})
 
     def drum_times(self, mixer):
-        kick = meters.detect_hits(mixer.node_audio("kick"), self.rate) / self.rate if self.has("kick") else np.array([])
-        snare = meters.detect_hits(mixer.node_audio("snare"), self.rate) / self.rate if self.has("snare") else np.array([])
+        kick = punchlib.drum_hits(mixer.node_audio("kick"), self.rate, "kick") if self.has("kick") else np.array([])
+        snare = punchlib.drum_hits(mixer.node_audio("snare"), self.rate, "snare") if self.has("snare") else np.array([])
         return kick, snare
 
-    def punch_faders(self, mixer):
-        """Kick and snare faders move (at most 4 dB up or 3 down) until their hits stand out of the mix by the target."""
+    def punch_faders(self, mixer, targets=None):
+        """Kick and snare faders move (at most 6 dB over or 3 dB under the static balance) until their hits stand out of
+        the mix by the target. A fader whose travel does not move the measure (wrong hits) stays where it is."""
         kick_s, snare_s = self.drum_times(mixer)
         self.kick_s, self.snare_s = kick_s, snare_s
-        for name, key, target, times in (("kick", "kick_low", self.KICK_LOW_PROMINENCE, kick_s),
-                                         ("snare", "snare_body", self.SNARE_BODY_PROMINENCE, snare_s)):
+        targets = targets or {"kick_low": self.KICK_LOW_PROMINENCE, "snare_body": self.SNARE_BODY_PROMINENCE}
+        for name, key, target, times in (("kick", "kick_low", targets["kick_low"], kick_s),
+                                         ("snare", "snare_body", targets["snare_body"], snare_s)):
             if not self.has(name) or len(times) < 4:
                 continue
             start = self.bus(name)["fader_db"]
+            base = self.static_faders.get(name, start)
             tried = []
             chosen = start
             for step in [0, 1, 2, 3, 4, 5, 6, -1, -2, -3]:
+                # At most 6 dB over and 3 dB under the static balance, however many passes run.
+                if not -3 <= start + step - base <= 6:
+                    continue
                 faders = {name: start + step}
                 found = punch_of(self.mix_of(mixer, faders), self.rate, kick_s, snare_s)[key]
                 tried.append({"step_db": step, key: found})
             ups = [t for t in tried if t["step_db"] >= 0]
             downs = [t for t in tried if t["step_db"] <= 0]
-            if tried[0][key] < target:
+            if ups[-1][key] - tried[0][key] < 1.0 and tried[0][key] < target:
+                reach = tried[0]
+            elif tried[0][key] < target:
                 reach = next((t for t in ups if t[key] >= target), ups[-1])
             else:
                 # Already above: come down only while it stays above the target.
@@ -1046,7 +1057,7 @@ class Engineer:
         if not self.has("kick"):
             return
         rate, length = self.rate, mixer.length
-        kick_hits = meters.detect_hits(mixer.node_audio("kick"), rate)
+        kick_hits = (punchlib.drum_hits(mixer.node_audio("kick"), rate, "kick") * rate).astype(int)
         kick_level = float(np.median(meters.hit_stats(mixer.node_audio("kick"), rate, kick_hits)["level_db"]))
         between = ~meters.windows(length, kick_hits, rate, (-5, 150))
         replaced = {}
@@ -1184,8 +1195,15 @@ class Engineer:
         self.log("drum-bus.glue", "drums", "kept" if kept else "dropped: punch did not hold", {"before": base, "tried": tried})
 
     def rebalance_stage(self, pool):
-        """Downstream re-decided once after the upstream changes: the punch faders read the mix as it now is."""
-        self.punch_faders(self.rendered(pool))
+        """Downstream re-decided once after the upstream changes. The punch that counts is the master's: a trial
+        master at the release loudness shows how much each drum loses there, and the mix targets add that back."""
+        mixer = self.rendered(pool)
+        best, _ = self.master_select(mixer, mixer.nodes["mix"][1])
+        loss = best[2] if best else {}
+        targets = {"kick_low": self.MASTER_KICK_PROMINENCE + max(0.0, loss.get("kick_low", 0.0)),
+                   "snare_body": self.MASTER_SNARE_PROMINENCE + max(0.0, loss.get("snare_body", 0.0))}
+        self.log("balance.punch-targets", "mix", "measured", {"trial_master_loss_db": loss, "mix_targets_db": {k: r2(v) for k, v in targets.items()}})
+        self.punch_faders(mixer, targets)
 
     # ---------- stage 7: the master ----------
 

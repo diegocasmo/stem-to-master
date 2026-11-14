@@ -54,3 +54,15 @@ def tail(e, times_s):
 def side_mid(x):
     mid, side = (x[0] + x[1]) / 2, (x[0] - x[1]) / 2
     return db((side**2).sum()) - db((mid**2).sum())
+
+
+HIT_BANDS = {"kick": (30, 150), "snare": (1000, 8000)}
+
+
+def drum_hits(audio, rate, drum):
+    """Hit times (s) found in the drum's own band, so bleed of the other drum in its mics is not counted as a hit."""
+    import hits as hitlib
+
+    x = np.atleast_2d(np.asarray(audio, dtype=np.float64))
+    low, high = HIT_BANDS[drum]
+    return hitlib.detect((bandpass(x, rate, low, high) ** 2).sum(axis=0), rate) / rate

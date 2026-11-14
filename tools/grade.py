@@ -16,7 +16,7 @@ import soundfile
 from scipy import signal
 
 import hits as hitlib
-from punch import bandpass, db, env, prominence, side_mid, tail
+from punch import bandpass, db, drum_hits, env, prominence, side_mid, tail
 
 OCTAVES = [31.5, 63, 125, 250, 500, 1000, 2000, 4000, 8000, 16000]
 THIRDS = [10000, 12500]
@@ -38,8 +38,8 @@ def stem_hits(song, chain, rate, length):
         name = path.stem.lower()
         if chain in name and "sample" not in name:
             x = soundfile.read(path, always_2d=True, dtype="float64")[0]
-            total[: len(x)] += (x**2).sum(axis=1)[:length]
-    return hitlib.detect(total, rate) / rate
+            total[: len(x)] += x.mean(axis=1)[:length]
+    return drum_hits(total, rate, chain)
 
 
 def align(ours, official, rate, reach_s=0.05):
