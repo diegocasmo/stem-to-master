@@ -333,7 +333,9 @@ def decide_track(args):
     elif cls == "synth":
         main = max(((lo, lo * 2) for lo in (125, 250, 500, 1000, 2000, 4000)), key=lambda b: node.band(*b))
         low, total = node.band(20, 150), node.band(20, 20000)
-        cands, judge, numbers = steep_hpf(node, "synths.hpf", [150, 120], (20, 150), main, order="12 dB/oct", fall_db=3)
+        # The highest cutoff that keeps the part's own main band within 1 dB; even a low one takes the sub rumble out.
+        cands, judge, numbers = steep_hpf(node, "synths.hpf", [150, 120, 80, 50], (20, 45), main, order="12 dB/oct", fall_db=3,
+                                          hold_db=1.0)
         node.attempt("synths.hpf", low > total - 20, numbers | {"total_db": r2(total), "main_band": list(main)}, cands, judge)
     return track["name"], node.inserts, node.decisions
 
@@ -388,7 +390,8 @@ class Engineer:
     CYMBAL_AIR_SLOPE = 1.0
     KICK_CLICK_PROMINENCE = 5.0
     SNARE_CRACK_PROMINENCE = 7.0
-    SUB_TILT_DB = -6.3
+    SUB_SOURCE_DB = -4.0
+    SUB_CUT_DEPTH_DB = 4.0
     CREST_LOSS_DB = 3.0
     # Export gates: the master's kick and snare must still stand out (the tuning songs' officials: kick 9.4-10.6 dB,
     # snare 10.1-12.9 dB by this measure).
@@ -944,8 +947,7 @@ class Engineer:
     def context_stage(self, pool):
         self.duck_bass(self.rendered(pool))
         self.lowmid_owner(self.rendered(pool))
-        self.tilt(self.rendered(pool), "sub.cut", (25, 45), (60, 100), self.SUB_TILT_DB, -1,
-                  lambda g: {"plugin": "LowShelfFilter", "settings": {"cutoff_frequency_hz": 45.0, "gain_db": g, "q": 0.707}}, (-2.0, -4.0, -6.0))
+        self.source_sub(self.rendered(pool))
         self.tilt(self.rendered(pool), "presence", (2000, 4000), (125, 250), self.PRESENCE_TILT_DB, 1,
                   lambda g: {"plugin": "PeakFilter", "settings": {"cutoff_frequency_hz": 3000.0, "gain_db": g, "q": 0.7}}, (1.5, 3.0, 4.5, 6.0))
         # Air and top follow the cymbals as recorded: a bright cymbal source is left bright, a dull one gets lifted.
@@ -957,6 +959,36 @@ class Engineer:
         self.lead_space(pool)
         self.attack_eq(self.rendered(pool), "kick", "kick.click", "kick_click", 4000.0, self.KICK_CLICK_PROMINENCE)
         self.attack_eq(self.rendered(pool), "snare", "snare.crack", "snare_crack", 5000.0, self.SNARE_CRACK_PROMINENCE)
+
+    def source_sub(self, mixer):
+        """Sub as the sources carry it: a kick or bass whose 25-45 Hz stands within SUB_SOURCE_DB of its own 60-100 Hz
+        (boom under the note or the hit) gets a low shelf until it sits SUB_CUT_DEPTH_DB under that. Nothing is boosted: a source with no sub
+        stays without it."""
+        for name in ("kick", "bass"):
+            if not self.has(name):
+                continue
+            audio = mixer.node_audio(name)
+
+            def tilt(x):
+                spec = meters.spectrum(x[:, self.dense], self.rate)
+                return meters.band_db(spec, 25, 45) - meters.band_db(spec, 60, 100)
+
+            t0 = tilt(audio)
+            numbers = {"sub_tilt_db": r2(t0), "rule_db": self.SUB_SOURCE_DB}
+            if t0 <= self.SUB_SOURCE_DB:
+                self.log("sub.cut", name, "dropped: not needed", numbers)
+                continue
+            tried, kept = [], None
+            for gain in (-2.0, -4.0, -6.0, -8.0, -10.0):
+                insert = {"id": "sub.cut", "plugin": "LowShelfFilter", "settings": {"cutoff_frequency_hz": 45.0, "gain_db": gain, "q": 0.707}}
+                out, key = daw.chain(self.cache, self.rate, mixer.nodes[name][0], lambda: audio, [insert])
+                t = tilt(out)
+                tried.append({"gain_db": gain, "sub_tilt_db": r2(t)})
+                kept = insert
+                if t <= self.SUB_SOURCE_DB - self.SUB_CUT_DEPTH_DB:
+                    break
+            self.bus(name)["inserts"].append(kept)
+            self.log("sub.cut", name, "kept", numbers | {"tried": tried})
 
     def lead_space(self, pool):
         """A guitar that plays in the middle through the song (a melody or lead, no double) gets a stereo plate on a
