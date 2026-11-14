@@ -1,0 +1,100 @@
+{
+ "source_stems": "DaimonB_Prisoner_Full",
+ "official": "Prisoner_Full_Preview.mp3",
+ "window_s": [
+  0.0,
+  45.0
+ ],
+ "official_offset_samples": -336557,
+ "official_offset_s": -7.6317,
+ "drift_check_samples": [
+  28,
+  -1,
+  26
+ ],
+ "excluded_vocal": [
+  "45_Vox1.wav",
+  "46_Vox1DT.wav",
+  "47_Vox1DT.wav",
+  "48_Vox1DT.wav",
+  "49_Vox2.wav",
+  "50_Vox2DT.wav",
+  "51_Vox3.wav",
+  "52_Vox3DT.wav",
+  "53_Vox3DT.wav",
+  "54_Vox3DT.wav",
+  "55_Vox4.wav",
+  "56_Vox5.wav",
+  "57_Vox5DT.wav",
+  "58_Vox5DT.wav",
+  "59_Vox5DT.wav",
+  "60_Vox6.wav",
+  "61_Vox6DT.wav",
+  "62_Vox6DT.wav",
+  "63_Vox6DT.wav",
+  "64_Vox7.wav",
+  "65_Vox7DT.wav"
+ ],
+ "excluded_di": [],
+ "silent_in_window": [
+  "04_SnareSample.wav",
+  "11_Ride.wav",
+  "13_Cymbal2.wav",
+  "14_Cymbal3.wav",
+  "15_SFX1.wav",
+  "16_SFX2.wav",
+  "17_SFX3.wav",
+  "18_SFX4.wav",
+  "19_SFX5.wav",
+  "20_SFX6.wav",
+  "21_SFX7.wav",
+  "22_SFX8.wav",
+  "28_ElecGtr4.wav",
+  "29_ElecGtr5.wav",
+  "30_ElecGtr6.wav",
+  "31_ElecGtr7.wav",
+  "32_ElecGtr7DT.wav",
+  "33_ElecGtr8.wav",
+  "34_ElecGtr8DT.wav",
+  "44_Synth10.wav"
+ ],
+ "stems": [
+  "01_Kick.wav",
+  "02_SnareUp.wav",
+  "03_SnareDown.wav",
+  "05_Tom1.wav",
+  "06_Tom2.wav",
+  "07_Tom3.wav",
+  "08_Tom4.wav",
+  "09_Overheads.wav",
+  "10_DrumsRoom.wav",
+  "12_Cymbal1.wav",
+  "23_Bass.wav",
+  "24_ElecGtr1.wav",
+  "25_ElecGtr1DT.wav",
+  "26_ElecGtr2.wav",
+  "27_ElecGtr3.wav",
+  "35_Synth01.wav",
+  "36_Synth02.wav",
+  "37_Synth03.wav",
+  "38_Synth04.wav",
+  "39_Synth05.wav",
+  "40_Synth06.wav",
+  "41_Synth07.wav",
+  "42_Synth08.wav",
+  "43_Synth09.wav"
+ ],
+ "core": {
+  "01_Kick.wav": 0.53,
+  "23_Bass.wav": 0.37,
+  "24_ElecGtr1.wav": 0.37
+ },
+ "graded_spans_s": [
+  [
+   7.7,
+   22.6
+  ]
+ ],
+ "graded_s": 14.9,
+ "why_graded_spans": "no 45 s of the song has every vocal stem silent; the grader scores only the spans where all vocal stems are silent (with 1.5 s margin) and kick, bass and the main guitar play"
+}

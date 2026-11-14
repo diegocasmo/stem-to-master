@@ -1,0 +1,77 @@
+{
+ "source_stems": "TheBrightStarAlliance_Error404_Full",
+ "official": "Error404_Full_Preview.mp3",
+ "window_s": [
+  63.6,
+  93.6
+ ],
+ "official_offset_samples": -1030339,
+ "official_offset_s": -23.3637,
+ "drift_check_samples": [
+  20,
+  -35,
+  0
+ ],
+ "excluded_vocal": [
+  "34_LeadVox.wav",
+  "35_BackingVox1.wav",
+  "36_BackingVox2.wav",
+  "37_BackingVox2DT.wav",
+  "38_BackingVox3.wav",
+  "39_BackingVox4.wav",
+  "40_BackingVox5.wav",
+  "41_BackingVox5DT.wav",
+  "42_BackingVox6.wav",
+  "43_BackingVox6DT.wav",
+  "44_BackingVox7.wav",
+  "45_VoxSample.wav"
+ ],
+ "excluded_di": [
+  "11_BassDI.wav",
+  "13_ElecGtr1DI.wav",
+  "15_ElecGtr2DI.wav",
+  "17_ElecGtr2DTDI.wav",
+  "19_ElecGtr3DI.wav",
+  "21_ElecGtr4DI.wav",
+  "23_ElecGtr5DI.wav",
+  "25_ElecGtr5DTDI.wav"
+ ],
+ "silent_in_window": [
+  "20_ElecGtr4.wav",
+  "22_ElecGtr5.wav",
+  "24_ElecGtr5DT.wav",
+  "26_Synth1.wav",
+  "29_Synth4.wav",
+  "30_Synth5.wav",
+  "31_Synth6.wav",
+  "32_SynthSFX.wav",
+  "33_Piano.wav"
+ ],
+ "stems": [
+  "01_Kick.wav",
+  "02_KickSample.wav",
+  "03_Snare.wav",
+  "04_SnareSample.wav",
+  "05_Tom1.wav",
+  "06_Tom2.wav",
+  "07_Tom3.wav",
+  "08_Overheads.wav",
+  "09_DrumsRoom.wav",
+  "10_BassAmp.wav",
+  "12_ElecGtr1.wav",
+  "14_ElecGtr2.wav",
+  "16_ElecGtr2DT.wav",
+  "18_ElecGtr3.wav",
+  "27_Synth2.wav",
+  "28_Synth3.wav"
+ ],
+ "core": {
+  "01_Kick.wav": 1.0,
+  "10_BassAmp.wav": 1.0,
+  "14_ElecGtr2.wav": 1.0
+ },
+ "full_band_fraction": 1.0,
+ "graded_spans_s": [],
+ "graded_s": 0.0,
+ "why_graded_spans": "no 45 s of the song has every vocal stem silent; the grader scores only the spans where all vocal stems are silent (with 1.5 s margin) and kick, bass and the main guitar play"
+}

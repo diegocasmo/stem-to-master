@@ -1,0 +1,21 @@
+{
+ "source_stems": "stems already in songs/000 (0-90.0 s cut, no vocal or DI stems)",
+ "official": "FlawedDesign_Full_Preview.mp3 (= stemmaster-scratch/compare/official.mp3)",
+ "window_s": [
+  12.0,
+  42.0
+ ],
+ "official_offset_samples": -606277,
+ "official_offset_s": -13.7478,
+ "excluded_vocal": "vocal stems not in this set",
+ "excluded_di": "none in this set",
+ "graded_spans_s": [
+  [
+   3.4,
+   18.4
+  ]
+ ],
+ "graded_s": 15.0,
+ "why_graded_spans": "the official starts 13.75 s into our stems; from 31 s on its 1-4 kHz runs 2-5 dB over our stems relative to 80-400 Hz, frame by frame, which is the vocals; 15.4-30.4 (riff1) has no such excess (research report)",
+ "note": "30 s cut of songs/000-daimon-b-flawed-design-full (stems clock 12-42 s)"
+}
