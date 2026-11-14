@@ -3,7 +3,7 @@ import copy
 import soundfile
 
 import daw
-from conftest import RATE, kicks, noise
+from conftest import RATE, kicks, needs_plugins, noise
 from engineer import zl_eq
 
 SHAPE = {"band_hz": [None, 150], "hold_ms": 30.0, "fade_ms": 40.0, "depth_db": 6.0, "floor_db": 30}
@@ -32,6 +32,7 @@ def master(song, recipe, cache_folder):
     return daw.Mixer(song, recipe, daw.Cache(cache_folder)).render()[1].tobytes()
 
 
+@needs_plugins
 def test_cached_render_equals_fresh(tmp_path):
     (tmp_path / "stems").mkdir()
     soundfile.write(tmp_path / "stems" / "Kick.wav", kicks(3), RATE, subtype="PCM_24")
