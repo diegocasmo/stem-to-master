@@ -34,7 +34,7 @@ Goal: a crack that cuts through dense guitars, a body with weight, and hits that
 - **Why:** a ringing note makes the snare sound small and tubby.
 - **Start:** on the snare bus input, a cut at the peak in 300-900 Hz that rises most: -4 then -6 dB, Q 4.
 - **Tool:** `PeakFilter`.
-- **Needed if:** a peak in 300-900 Hz rises more than 6 dB over the median of its 1/3-octave neighbourhood.
+- **Needed if:** a peak in 300-900 Hz, the highest bin within ±6%, rises more than 6 dB over the median of its 1/3-octave neighbourhood.
 - **Worked if:** the band within ±8% of the peak falls by more than 0.5 dB and 150-250 Hz holds within 0.5 dB.
 
 ### snare.crack

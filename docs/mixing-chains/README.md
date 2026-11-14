@@ -38,7 +38,7 @@ Each move has **Needed if** (a measured condition that justifies a trial) and **
 
 - An insert is rendered on and off on the same node (track or bus), from cached audio. Candidates are tried in a fixed order; the move keeps the first that passes, unless its section says otherwise.
 - Hits are found once, on the input, and every one is measured again after processing. Finding them again on the output would hide the soft hits a step lost.
-- Source moves are judged on the source. Context moves are judged on the full mix with the candidate in place (`mix_of`: the drums bus and mix bus run through their inserts), over the full-band frames.
+- Source moves are judged on the source. Context moves are judged on the full mix with the candidate in place (`mix_of`: the drums bus and mix bus run through their inserts). Tone and balance moves (`balance.fader`, `lowmid.cut`, `presence`, `air`, `top`, `guitars.lead-space`) read the full-band frames; prominence (punch faders, ducks, `kick.click`, `snare.crack`, `drum-bus.glue`) is read over the whole song; `sub.cut` is judged on its own bus.
 - A move applies to each source it names: a song with five toms decides `toms.clean` for each tom.
 - Full-mix limits are rules in `Engineer` (for example `KICK_LOW_PROMINENCE`), the same for every song. The profile's references are only a printed comparison at export; nothing reads them back.
 - A rule changes only with measurements from a song, and the reason goes in the code next to the constant.
@@ -61,11 +61,11 @@ No published metric measures punch on a finished master, and a master can sit in
 - **Export gates:** loudness, true peak, crest loss, kick and snare prominence in the master, and side/mid width. See [master.md](master.md).
 - **Holds:** falls by at most 0.5 dB (`HOLD_DB`), unless the move gives another number.
 
-Standalone tools: `analyze.py` measures whole-file loudness, peaks, octave bands and width; `hits.py` the hit stats; `measure.py` valley, overlap, limiter dip, section loudness and profile range; `notes.py` finds notes; `grade.py` compares a master with the official one. Of these, the engineer reads only `measure.py`'s profile range, for the printed comparison.
+Standalone tools: `analyze.py` measures whole-file loudness, peaks, octave bands and width; `hits.py` the hit stats; `measure.py` valley, overlap, limiter dip, section loudness and profile range; `notes.py` finds notes; `grade.py` compares a master with the official one. The engineer uses `hits.py` (through `meters` and `punch`), `notes.py` for the bass notes, and `measure.py`'s profile range for the printed comparison.
 
 ## Done rule
 
-Every implemented move that applies to the song's stems is logged in the recipe's `decisions`, by id, with its target, an outcome and its numbers. The outcome is `kept` (the insert or setting is in the recipe), `dropped: <reason>` (not needed, did not work, or not tried), or `measured` for a measure that later moves read. A move whose **Needed if** finds no fault is dropped with the numbers it checked. Every kept insert carries the move's id.
+Every implemented move that applies to the song's stems is logged in the recipe's `decisions`, by id, with its target, an outcome and its numbers. The outcome is `kept` (the insert or setting is in the recipe; `kept: deepest, short of target` for kick.tail's fallback), `dropped: <reason>` (not needed, did not work, or not tried), or `measured` for a measure that later moves read. A move whose **Needed if** finds no fault is dropped with the numbers it checked, except these, which skip without a log entry when their precondition fails: `balance.punch` (under 4 hits), `kick.sample-blend` and `snare.sample-blend` (under 2 hits), `overheads.close-pan` (under 0.2 s), `overheads.close-blend` (under 0.5 s), and `balance.fader` (a silent bus, or toms with under 0.3 s of fills). Every kept insert carries the move's id.
 
 ## Limits
 
