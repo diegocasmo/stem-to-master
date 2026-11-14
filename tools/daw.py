@@ -10,6 +10,7 @@ import math
 import os
 import platform
 import sys
+import tomllib
 from importlib import metadata
 from pathlib import Path
 
@@ -21,6 +22,7 @@ import native
 
 ROOT = Path(__file__).resolve().parents[1]
 PLUGINS = ROOT / "plugins"
+LOCKED = {entry["name"] for entry in tomllib.loads((ROOT / "plugins.lock").read_text())["plugin"]}
 LIBC = ctypes.CDLL(None)
 RAND_SEED = 1
 NATIVE = {"Ride", "Duck", "Shape"}
@@ -129,6 +131,9 @@ def load(plugin, settings):
     bundle = PLUGINS / f"{plugin}.vst3"
     if not bundle.exists():
         return getattr(pedalboard, plugin)(**settings)
+    # A bundle left in plugins/ but not locked would render here and fail on a fresh clone.
+    if plugin not in LOCKED:
+        raise ValueError(f"{plugin} is in plugins/ but not in plugins.lock")
     # Dragonfly draws on the process-wide C rand(), so its state is fixed before every load.
     LIBC.srand(RAND_SEED)
     instance = pedalboard.load_plugin(str(bundle))
