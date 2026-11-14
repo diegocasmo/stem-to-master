@@ -767,7 +767,25 @@
     "bleed_db": -4.97,
     "own_hits": 23,
     "detected": 23,
+    "gate_threshold_db": -44.16,
     "tried": [
+     {
+      "settings": {
+       "gate_threshold": -44.16,
+       "gate_ratio": 99.903,
+       "gate_attack": 0.4,
+       "gate_hold": 300.0,
+       "gate_release": 99.8,
+       "gate_lookahead": 2.0,
+       "gate_hysteresis": 3.0
+      },
+      "level_change_min": -0.0,
+      "level_change_p50": -0.0,
+      "attack_change_p10": -0.0,
+      "attack_change_p50": -0.0,
+      "bleed_change": -0.0,
+      "kept": false
+     },
      {
       "settings": {
        "segments": [
@@ -837,7 +855,25 @@
     "bleed_db": -2.73,
     "own_hits": 25,
     "detected": 25,
+    "gate_threshold_db": -43.12,
     "tried": [
+     {
+      "settings": {
+       "gate_threshold": -43.12,
+       "gate_ratio": 99.903,
+       "gate_attack": 0.4,
+       "gate_hold": 300.0,
+       "gate_release": 99.8,
+       "gate_lookahead": 2.0,
+       "gate_hysteresis": 3.0
+      },
+      "level_change_min": -0.0,
+      "level_change_p50": -0.0,
+      "attack_change_p10": -0.0,
+      "attack_change_p50": 0.0,
+      "bleed_change": -0.0,
+      "kept": false
+     },
      {
       "settings": {
        "segments": [
@@ -888,7 +924,25 @@
     "bleed_db": -1.55,
     "own_hits": 16,
     "detected": 16,
+    "gate_threshold_db": -43.76,
     "tried": [
+     {
+      "settings": {
+       "gate_threshold": -43.76,
+       "gate_ratio": 99.903,
+       "gate_attack": 0.4,
+       "gate_hold": 300.0,
+       "gate_release": 99.8,
+       "gate_lookahead": 2.0,
+       "gate_hysteresis": 3.0
+      },
+      "level_change_min": -0.0,
+      "level_change_p50": -0.0,
+      "attack_change_p10": -0.0,
+      "attack_change_p50": -0.0,
+      "bleed_change": -0.0,
+      "kept": false
+     },
      {
       "settings": {
        "segments": [

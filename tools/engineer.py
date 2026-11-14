@@ -170,13 +170,14 @@ def eq_cut_if(node, move, needed, numbers, freq, gains, q, band, keep=None):
 
 
 def tom_edit(node, move):
-    """toms.clean as an edit: keep each tom only around its own hits, with its decay, via a Ride (mute automation)."""
+    """toms.clean: a gate on the tom's own hits, else an edit that keeps each tom only around them (Ride mute automation)."""
     stats = node.hit_stats()
     if stats["hits"] == 0:
         node.record(move, "dropped: no hits", {})
         return
     levels = np.array(stats["level_db"])
-    own = node.hits[levels >= levels.max() - 20]
+    own_mask = levels >= levels.max() - 20
+    own = node.hits[own_mask]
     bleed = stats["bleed_db"]["all"]
     numbers = {"bleed_db": r2(bleed), "own_hits": len(own), "detected": int(stats["hits"])}
     rate, length = node.rate, node.audio.shape[1]
@@ -209,7 +210,17 @@ def tom_edit(node, move):
         ok = change["bleed_change"] <= -1 and change["level_change_min"] >= -1 and change["attack_change_p10"] >= -1
         return ok, change
 
-    node.attempt(move, bleed > -25 and segments, numbers, [{"plugin": "Ride", "settings": {"segments": segments, "ramp_ms": 10}}], judge)
+    # The gate opens 6 dB under the softest own hit and holds through the 300 ms the edit keeps at least; it keeps a
+    # tom's own decay where the edit's fixed gaps do not reach the bleed. The edit is the fallback for toms whose
+    # bleed is too close to their hits for a level threshold. Hit levels sum power over channels; the gate reads each
+    # channel, so the threshold comes down by the channel count. FreeGate snaps to its own grid (threshold 0.08 dB,
+    # attack 0.2 ms, release about 0.5 ms), so the recipe holds the values it renders (release to 0.01 ms).
+    softest = levels[own_mask].min() - 10 * np.log10(node.audio.shape[0])
+    threshold = round(float(round(max(-80.0, softest - 6) / 0.08) * 0.08), 2)
+    numbers["gate_threshold_db"] = threshold
+    gate = {"plugin": "FreeGate", "settings": {"gate_threshold": threshold, "gate_ratio": 99.903, "gate_attack": 0.4,
+                                               "gate_hold": 300.0, "gate_release": 99.8, "gate_lookahead": 2.0, "gate_hysteresis": 3.0}}
+    node.attempt(move, bleed > -25 and segments, numbers, [gate, {"plugin": "Ride", "settings": {"segments": segments, "ramp_ms": 10}}], judge)
     node.hits = times_backup
 
 

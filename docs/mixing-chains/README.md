@@ -23,7 +23,7 @@ Each move is a heading `### <id>`, where `<id>` is exactly the id the engineer l
 `Engineer.stages()` runs these stages in order; `tools/run.py` then exports. Within a file, moves are listed in this order.
 
 1. **setup:** classify the stems (in the constructor), pan guitars, toms and close cymbals, align kick and snare mics, find the full-band frames.
-2. **tracks:** per-track inserts, in parallel workers: the toms edit, snare, overhead and close-cymbal high-passes, the room chain, bass, guitar and synth filters.
+2. **tracks:** per-track inserts, in parallel workers: the toms gate or edit, snare, overhead and close-cymbal high-passes, the room chain, bass, guitar and synth filters.
 3. **drums:** kick and snare mic and sample blends, close-cymbal and guitar-pair faders; then on the kick bus the tail, weight and mud cut, and the snare ring cut.
 4. **balance:** static bus faders against the reference group, then kick and snare faders for punch.
 5. **context:** on the full mix: kick-keyed ducks, low-mid cut, sub cut, presence, air, top, lead space, kick click, snare crack.
