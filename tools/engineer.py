@@ -469,7 +469,7 @@ class Engineer:
 
     def stages(self):
         return ["setup_stage", "tracks_stage", "drums_stage", "balance_stage", "context_stage", "glue_stage",
-                "rebalance_stage", "peaks_stage", "master_stage"]
+                "rebalance_stage", "master_stage"]
 
     # ---------- recipe helpers ----------
 
@@ -751,15 +751,37 @@ class Engineer:
             self.log(f"{group}.sample-blend", s["name"], "kept", {"fader_db": gain})
 
     def blend_grid(self, mixer, mics, score, steps=(0.0, -4.0, -8.0, -12.0, None)):
-        """Faders for every mic but the first, from a small grid; score(sum) -> (ok, value), highest value wins."""
+        """Faders for every mic but the first: a full grid for up to two more mics, else one mic at a time in order
+        (each settled with the ones before it). score(sum) -> (ok, value, numbers); the highest value wins."""
         audio = {t["name"]: daw.pan_gain(mixer.node_audio(t["name"]), 0, t["pan"]) for t in mics}
-        best, tried = None, []
-        for combo in itertools.product(steps, repeat=len(mics) - 1):
-            faders = [0.0] + list(combo)
+        tried = []
+
+        def run(faders):
             total = sum(audio[t["name"]] * (0 if f is None else 10 ** (f / 20)) for t, f in zip(mics, faders))
             ok, value, numbers = score(total)
-            tried.append({"faders": faders, **numbers, "ok": ok})
-            if ok and (best is None or value > best[1]):
+            tried.append({"faders": list(faders), **numbers, "ok": ok})
+            return ok, value
+
+        if len(mics) <= 3:
+            combos = [[0.0] + list(c) for c in itertools.product(steps, repeat=len(mics) - 1)]
+            best = None
+            for faders in combos:
+                ok, value = run(faders)
+                if ok and (best is None or value > best[1]):
+                    best = (faders, value)
+            return best, tried
+        faders = [0.0] + [None] * (len(mics) - 1)
+        run(faders)
+        best = None
+        for index in range(1, len(mics)):
+            options = []
+            for step in steps:
+                trial = faders[:index] + [step] + faders[index + 1 :]
+                ok, value = run(trial)
+                if ok:
+                    options.append((value, trial))
+            if options:
+                value, faders = max(options, key=lambda o: o[0])
                 best = (faders, value)
         return best, tried
 
@@ -1204,42 +1226,6 @@ class Engineer:
             if best is None or worst < best[0]:
                 best = (worst, chain, loss, punch_of(out, self.rate, kick_s, snare_s))
         return best, tried
-
-    def peaks_stage(self, pool):
-        """Drum peak control judged through the master: a clipper on the kick or snare bus, a few dB under its median
-        hit peak, kept only if the master at the release loudness keeps more kick and snare punch."""
-        mixer = self.rendered(pool)
-        mix = mixer.nodes["mix"][1]
-        base, _ = self.master_select(mixer, mix)
-        if base is None:
-            self.log("drums.peaks", "drums", "dropped: no master reached the loudness", {})
-            return
-        score = lambda p: (p.get("kick_low") or 0) + (p.get("snare_body") or 0)
-        for name in ("kick", "snare"):
-            if not self.has(name):
-                continue
-            audio = mixer.node_audio(name)
-            times = meters.detect_hits(audio, self.rate)
-            if len(times) < 4:
-                continue
-            span = int(0.01 * self.rate)
-            peak = float(np.median([20 * math.log10(max(float(np.abs(audio[:, t : t + span]).max()), 1e-9)) for t in times]))
-            tried, kept = [], None
-            for depth in (3.0, 6.0):
-                insert = {"id": f"{name}.clip", "plugin": "Clipping", "settings": {"threshold_db": round(peak - depth, 2)}}
-                self.bus(name)["inserts"].append(insert)
-                m = self.rendered(pool)
-                found, _ = self.master_select(m, m.nodes["mix"][1])
-                self.bus(name)["inserts"].pop()
-                ok = found is not None and score(found[3]) >= score(base[3]) + 0.5 and all(
-                    (found[3].get(k) or 0) >= (base[3].get(k) or 0) - 0.5 for k in ("kick_low", "snare_body"))
-                tried.append({"depth_db": depth, "master_punch": found[3] if found else None, "ok": ok})
-                if ok:
-                    kept, base = insert, found
-            if kept:
-                self.bus(name)["inserts"].append(kept)
-            self.log(f"{name}.clip", name, "kept" if kept else "dropped: master punch did not improve",
-                     {"median_hit_peak_db": r2(peak), "tried": tried})
 
     LOUDNESS_STEPS = (-7.0, -7.5, -8.0)
 
