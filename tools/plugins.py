@@ -41,18 +41,26 @@ def download(entry, folder):
     return path
 
 
+def run(entry, *command):
+    try:
+        subprocess.run(command, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE, text=True)
+    except subprocess.CalledProcessError as error:
+        fail(entry["name"], f"{command[0]} {command[1]} failed with exit {error.returncode} {error.stderr.strip()}".strip())
+    except OSError as error:
+        fail(entry["name"], f"{command[0]} {command[1]} failed ({error})")
+
+
 def extract(entry, dmg, folder):
     """Copy the bundle out of the dmg's pkg without running the installer or its scripts."""
     mount, expanded = folder / "mount", folder / "expanded"
-    subprocess.run(["hdiutil", "attach", "-readonly", "-nobrowse", "-noautoopen", "-quiet", "-mountpoint", mount, dmg],
-                   check=True)
+    run(entry, "hdiutil", "attach", "-readonly", "-nobrowse", "-noautoopen", "-quiet", "-mountpoint", mount, dmg)
     try:
         packages = list(mount.glob("*.pkg"))
         if len(packages) != 1:
             fail(entry["name"], f"expected one .pkg in {dmg.name}, found {len(packages)}")
-        subprocess.run(["pkgutil", "--expand-full", packages[0], expanded], check=True, stdout=subprocess.DEVNULL)
+        run(entry, "pkgutil", "--expand-full", packages[0], expanded)
     finally:
-        subprocess.run(["hdiutil", "detach", "-quiet", mount], check=True)
+        run(entry, "hdiutil", "detach", "-quiet", mount)
     found = list(expanded.glob(f"**/Payload/{entry['name']}.vst3"))
     if len(found) != 1:
         fail(entry["name"], f"expected one {entry['name']}.vst3 in {dmg.name}, found {len(found)}")
