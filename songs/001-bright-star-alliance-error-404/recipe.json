@@ -1956,6 +1956,26 @@
      {
       "step_db": -1,
       "kick_low": 11.2
+     },
+     {
+      "step_db": -2,
+      "kick_low": 10.33
+     },
+     {
+      "step_db": -3,
+      "kick_low": 9.59
+     },
+     {
+      "step_db": -4,
+      "kick_low": 8.84
+     },
+     {
+      "step_db": -5,
+      "kick_low": 8.14
+     },
+     {
+      "step_db": -6,
+      "kick_low": 7.4
      }
     ],
     "fader_db": -1.35

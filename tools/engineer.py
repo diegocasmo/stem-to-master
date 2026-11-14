@@ -943,25 +943,36 @@ class Engineer:
         snare = punchlib.drum_hits(mixer.node_audio("snare"), self.rate, "snare") if self.has("snare") else np.array([])
         return kick, snare
 
+    def unity_sum(self):
+        """Every stem as recorded, summed at unity gain: the balance the recording itself carries."""
+        if getattr(self, "_unity", None) is None:
+            total = np.zeros((2, self.length))
+            for t in self.recipe["tracks"]:
+                total += self.raw(t).astype(np.float64)
+            self._unity = total
+        return self._unity
+
     def punch_faders(self, mixer, loss=None):
-        """Kick and snare faders move (at most 9 dB over or 1 dB under the static balance) only as far as it takes to
-        bring their hits' prominence in the mix into the range: the master range plus what the master takes away. A
-        fader whose travel does not move the measure (wrong hits) stays where it is."""
+        """Kick and snare faders move (at most 9 dB over or 6 dB under the static balance) only as far as it takes to
+        bring their hits' prominence in the mix into the range: the master range plus what the master takes away. The
+        range's top rises to the drum's prominence in the raw stems summed at unity: a drum the recording itself puts
+        that far out (a half-time kick over a thin intro) is not pulled under it. A fader whose travel does not move
+        the measure (wrong hits) stays where it is."""
         kick_s, snare_s = self.drum_times(mixer)
         self.kick_s, self.snare_s = kick_s, snare_s
         loss = self.MIX_PUNCH_LOSS if loss is None else loss
+        unity = punch_of(self.unity_sum(), self.rate, kick_s, snare_s)
         for name, key, (low, high), times in (("kick", "kick_low", self.MASTER_KICK_RANGE, kick_s),
                                               ("snare", "snare_body", self.MASTER_SNARE_RANGE, snare_s)):
             if not self.has(name) or len(times) < 4:
                 continue
-            low, high = low + loss[key], high + loss[key]
+            low, high = low + loss[key], max(high + loss[key], unity[key] or -np.inf)
             start = self.bus(name)["fader_db"]
             base = self.static_faders.get(name, start)
             tried = []
             for step in [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, -1, -2, -3, -4, -5, -6]:
-                # At most 9 dB over and 1 dB under the static balance, however many passes run: the rule lifts a buried
-                # drum and trims one a little, but a drum the song's own balance makes stand out (a sparse intro) stays.
-                if not -1 <= start + step - base <= 9:
+                # At most 9 dB over and 6 dB under the static balance, however many passes run.
+                if not -6 <= start + step - base <= 9:
                     continue
                 faders = {name: start + step}
                 found = punch_of(self.mix_of(mixer, faders), self.rate, kick_s, snare_s)[key]
