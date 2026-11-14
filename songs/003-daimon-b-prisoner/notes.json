@@ -2,15 +2,15 @@
  "source_stems": "DaimonB_Prisoner_Full",
  "official": "Prisoner_Full_Preview.mp3",
  "window_s": [
-  0.0,
-  45.0
+  53.2,
+  83.2
  ],
- "official_offset_samples": -336557,
- "official_offset_s": -7.6317,
+ "official_offset_samples": -336528,
+ "official_offset_s": -7.631,
  "drift_check_samples": [
-  28,
-  -1,
-  26
+  -2,
+  -30,
+  12
  ],
  "excluded_vocal": [
   "45_Vox1.wav",
@@ -38,24 +38,19 @@
  "excluded_di": [],
  "silent_in_window": [
   "04_SnareSample.wav",
-  "11_Ride.wav",
+  "08_Tom4.wav",
   "13_Cymbal2.wav",
   "14_Cymbal3.wav",
-  "15_SFX1.wav",
-  "16_SFX2.wav",
-  "17_SFX3.wav",
-  "18_SFX4.wav",
-  "19_SFX5.wav",
   "20_SFX6.wav",
   "21_SFX7.wav",
   "22_SFX8.wav",
-  "28_ElecGtr4.wav",
-  "29_ElecGtr5.wav",
   "30_ElecGtr6.wav",
   "31_ElecGtr7.wav",
   "32_ElecGtr7DT.wav",
   "33_ElecGtr8.wav",
   "34_ElecGtr8DT.wav",
+  "35_Synth01.wav",
+  "37_Synth03.wav",
   "44_Synth10.wav"
  ],
  "stems": [
@@ -65,18 +60,23 @@
   "05_Tom1.wav",
   "06_Tom2.wav",
   "07_Tom3.wav",
-  "08_Tom4.wav",
   "09_Overheads.wav",
   "10_DrumsRoom.wav",
+  "11_Ride.wav",
   "12_Cymbal1.wav",
+  "15_SFX1.wav",
+  "16_SFX2.wav",
+  "17_SFX3.wav",
+  "18_SFX4.wav",
+  "19_SFX5.wav",
   "23_Bass.wav",
   "24_ElecGtr1.wav",
   "25_ElecGtr1DT.wav",
   "26_ElecGtr2.wav",
   "27_ElecGtr3.wav",
-  "35_Synth01.wav",
+  "28_ElecGtr4.wav",
+  "29_ElecGtr5.wav",
   "36_Synth02.wav",
-  "37_Synth03.wav",
   "38_Synth04.wav",
   "39_Synth05.wav",
   "40_Synth06.wav",
@@ -85,16 +85,12 @@
   "43_Synth09.wav"
  ],
  "core": {
-  "01_Kick.wav": 0.53,
-  "23_Bass.wav": 0.37,
-  "24_ElecGtr1.wav": 0.37
+  "01_Kick.wav": 1.0,
+  "23_Bass.wav": 1.0,
+  "24_ElecGtr1.wav": 1.0
  },
- "graded_spans_s": [
-  [
-   7.7,
-   22.6
-  ]
- ],
- "graded_s": 14.9,
+ "full_band_fraction": 1.0,
+ "graded_spans_s": [],
+ "graded_s": 0.0,
  "why_graded_spans": "no 45 s of the song has every vocal stem silent; the grader scores only the spans where all vocal stems are silent (with 1.5 s margin) and kick, bass and the main guitar play"
 }

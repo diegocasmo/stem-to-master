@@ -444,6 +444,8 @@ class Engineer:
     AIR_TILT_DB = -10.5
     PRESENCE_TILT_DB = -2.0
     TOP_TILT_DB = -10.3
+    CYMBAL_AIR_REF_DB = -4.3
+    CYMBAL_AIR_SLOPE = 1.0
     KICK_CLICK_PROMINENCE = 5.0
     SNARE_CRACK_PROMINENCE = 7.0
     SUB_TILT_DB = -6.3
@@ -983,12 +985,34 @@ class Engineer:
                   lambda g: {"plugin": "LowShelfFilter", "settings": {"cutoff_frequency_hz": 45.0, "gain_db": g, "q": 0.707}}, (-2.0, -4.0, -6.0))
         self.tilt(self.rendered(pool), "presence", (2000, 4000), (125, 250), self.PRESENCE_TILT_DB, 1,
                   lambda g: {"plugin": "PeakFilter", "settings": {"cutoff_frequency_hz": 3000.0, "gain_db": g, "q": 0.7}}, (1.5, 3.0, 4.5, 6.0))
-        self.tilt(self.rendered(pool), "air", (8000, 16000), (1000, 4000), self.AIR_TILT_DB, 1,
+        # Air and top follow the cymbals as recorded: a bright cymbal source is left bright, a dull one gets lifted.
+        shift = -self.CYMBAL_AIR_SLOPE * (self.cymbal_air(self.rendered(pool)) - self.CYMBAL_AIR_REF_DB)
+        self.tilt(self.rendered(pool), "air", (8000, 16000), (1000, 4000), self.AIR_TILT_DB + shift, 1,
                   lambda g: {"plugin": "HighShelfFilter", "settings": {"cutoff_frequency_hz": 7000.0, "gain_db": g, "q": 0.707}}, (2.0, 4.0, 6.0))
-        self.tilt(self.rendered(pool), "top", (11300, 16000), (5600, 11300), self.TOP_TILT_DB, 1,
+        self.tilt(self.rendered(pool), "top", (11300, 16000), (5600, 11300), self.TOP_TILT_DB + shift, 1,
                   lambda g: {"plugin": "HighShelfFilter", "settings": {"cutoff_frequency_hz": 12000.0, "gain_db": g, "q": 0.707}}, (2.0, 4.0, 6.0))
         self.attack_eq(self.rendered(pool), "kick", "kick.click", "kick_click", 4000.0, self.KICK_CLICK_PROMINENCE)
         self.attack_eq(self.rendered(pool), "snare", "snare.crack", "snare_crack", 5000.0, self.SNARE_CRACK_PROMINENCE)
+
+    def cymbal_air(self, mixer):
+        """The cymbal bus's own 8-16 kHz against its 1-4 kHz, before any tone move: how bright the cymbals were recorded."""
+        if not self.has("cymbals"):
+            return self.CYMBAL_AIR_REF_DB
+        audio, _ = mixer.summed("cymbals", self.recipe["tracks"] + self.recipe["buses"])
+        spec = meters.spectrum(audio[:, self.dense], self.rate)
+        found = meters.band_db(spec, 8000, 16000) - meters.band_db(spec, 1000, 4000)
+        self.log("overheads.brightness", "cymbals", "measured", {"air_db": r2(found), "reference_db": self.CYMBAL_AIR_REF_DB})
+        return found
+
+    def steady(self, mixer, name):
+        """True if the group plays through most of the full-band frames (toms that only play fills do not)."""
+        audio = mixer.node_audio(name)[:, self.dense].astype(np.float64)
+        hop = int(0.1 * self.rate)
+        count = audio.shape[1] // hop
+        if count == 0:
+            return False
+        level = 10 * np.log10((audio[:, : count * hop] ** 2).sum(axis=0).reshape(count, hop).mean(axis=1) + 1e-20)
+        return float((level > np.percentile(level, 95) - 30).mean()) >= 0.5
 
     def attack_eq(self, mixer, name, move, key, hz, target):
         """Click and crack: after the tone moves, a bell on the drum's attack band until its hits stand out of the
@@ -1103,7 +1127,9 @@ class Engineer:
         if off <= 1.0:
             self.log(move, "mix", "dropped: not needed", numbers)
             return
-        shares = {n: meters.band_db(meters.spectrum(self.leaf_out(mixer, n)[:, self.dense], self.rate), *moved) for n in self.leaves()}
+        # Only a source that plays through the song can own a broad tone move; fill-only toms carry cymbal bleed.
+        shares = {n: meters.band_db(meters.spectrum(self.leaf_out(mixer, n)[:, self.dense], self.rate), *moved)
+                  for n in self.leaves() if self.steady(mixer, n)}
         numbers |= {"owner_db": {n: r2(v) for n, v in shares.items()}}
         reached, replaced = t0, {}
         # The two sources that own most of the moved band, in turn: the second only if the first cannot reach the rule.
