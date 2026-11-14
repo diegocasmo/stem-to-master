@@ -7,9 +7,12 @@ from pathlib import Path
 
 import engineer
 
+# About two cold runs of this song: the current run's files are the newest, so they survive.
+CACHE_CAP_BYTES = 12 << 30
+
 if __name__ == "__main__":
     song = Path(sys.argv[1])
-    workers = int(sys.argv[sys.argv.index("--workers") + 1]) if "--workers" in sys.argv else 2
+    workers = int(sys.argv[sys.argv.index("--workers") + 1]) if "--workers" in sys.argv else 3
     t0 = time.perf_counter()
     times = {}
     eng = engineer.Engineer(song, workers)
@@ -23,5 +26,6 @@ if __name__ == "__main__":
         checks = eng.export(pool)
         times["export"] = round(time.perf_counter() - start, 1)
         print(json.dumps({k: v for k, v in checks.items() if k != "profile"}), flush=True)
+    eng.cache.prune(CACHE_CAP_BYTES)
     (song / "recipe.json").write_text(json.dumps(eng.recipe, indent=1, default=lambda o: o.item() if hasattr(o, "item") else str(o)) + "\n")
     print(json.dumps({"total_s": round(time.perf_counter() - t0, 1), "stages": times, "cache_hits": eng.cache.hits}))

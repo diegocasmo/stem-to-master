@@ -99,6 +99,20 @@ class Cache:
         temp.write_text(json.dumps(value))
         os.replace(temp, path)
 
+    def prune(self, cap_bytes):
+        """Least recently used files go first until the folder fits the cap; a hit refreshes a file's mtime."""
+        files = []
+        for entry in os.scandir(self.folder):
+            if entry.is_file(follow_symlinks=False):
+                stat = entry.stat(follow_symlinks=False)
+                files.append((stat.st_mtime_ns, stat.st_size, entry.path))
+        total = sum(size for _, size, _ in files)
+        for _, size, path in sorted(files):
+            if total <= cap_bytes:
+                break
+            os.unlink(path)
+            total -= size
+
     def measured(self, key, name, compute):
         """A measurement of the audio named by key; key None means the audio is uncached, so it is computed."""
         if key is None:
@@ -207,7 +221,11 @@ def stem_source(song, track, length):
 
 def pan_gain(audio, fader_db, position):
     """Fader and pan to stereo float64. Mono pans at constant power; stereo pans as a balance."""
-    gain = 10 ** (fader_db / 20)
+    # Explicit float64: under NumPy 2 a float32 array times a NumPy float64 scalar is float64 but times a Python float is
+    # float32, so the same fader read from JSON or computed in memory would round differently.
+    audio = audio.astype(np.float64)
+    gain = float(10 ** (float(fader_db) / 20))
+    position = float(position)
     if audio.shape[0] == 1:
         angle = (position + 1) * math.pi / 4
         return np.vstack([audio[0] * (gain * math.cos(angle)), audio[0] * (gain * math.sin(angle))])
@@ -235,6 +253,9 @@ class Mixer:
     """Renders a recipe. Tracks run in a small process pool; sums, buses, mix and master run here, in recipe order."""
 
     def __init__(self, song, recipe, cache, workers=2):
+        # Rendered as it would be read back from recipe.json, so numbers computed in memory (NumPy scalars) and numbers
+        # read from the file give the same samples.
+        recipe = json.loads(json.dumps(recipe, default=lambda o: o.item() if hasattr(o, "item") else str(o)))
         self.song, self.recipe, self.cache, self.workers = Path(song), recipe, cache, workers
         self.length = length_of(song, recipe)
         self.rate = soundfile.info(self.song / "stems" / recipe["tracks"][0]["stem"]).samplerate

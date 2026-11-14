@@ -5,6 +5,7 @@ Worked-if (measured on the insert's own input and output) decides whether it is 
 """
 import json
 import math
+import os
 import multiprocessing
 from pathlib import Path
 
@@ -405,7 +406,7 @@ class Engineer:
     def __init__(self, song, workers=2):
         self.song = Path(song)
         self.facts = json.loads((self.song / "song.json").read_text())
-        self.cache = daw.Cache(self.song / "cache")
+        self.cache = daw.Cache(os.environ.get("S2M_CACHE") or self.song / "cache")
         self.workers = workers
         self.profile = json.loads((daw.ROOT / "profiles" / self.facts["profile"] / "profile.json").read_text())
         self.sections = self.facts["sections"]
@@ -559,7 +560,7 @@ class Engineer:
 
     def stages(self):
         return ["align_stage", "tracks_stage", "groups_stage", "balance_stage", "drums_stage", "context_stage",
-                "profile_stage", "punch_stage", "mix_stage", "master_stage"]
+                "colour_stage", "profile_stage", "punch_stage", "mix_stage", "master_stage", "audit_stage"]
 
     # ---------- helpers on rendered nodes ----------
 
@@ -910,10 +911,10 @@ class Engineer:
         return audio
 
     # Stage 7: one correction pass toward the profile's octave bands, at the source that owns each band.
-    PROFILE_PASSES = 3
+    PROFILE_PASSES = 4
 
     def profile_stage(self, pool):
-        """Bounded: at most three band-correction passes, then the width through the guitar layer's pan."""
+        """Bounded: at most four band-correction passes, then the width through the guitar layer's pan."""
         for index in range(self.PROFILE_PASSES):
             mixer = self.mixer()
             mix, _ = mixer.render(pool, stop_at_mix=True)
@@ -925,14 +926,14 @@ class Engineer:
             self.correct_bands(mixer, mix, check)
         layer = [self.track("22_ElecGtr2"), self.track("23_ElecGtr2DT")]
         tried = []
-        for _ in range(3):
+        for _ in range(5):
             mixer = self.mixer()
             mix, _ = mixer.render(pool, stop_at_mix=True)
             _, master, _, _ = self.trial(mix, mixer.nodes["mix"][0])
             check = self.profile_check(master)
             width = check["side_mid_db"]
             tried.append({"layer_pan": layer[1]["pan"], "side_mid_db": width["value"], "outside": width["outside"]})
-            if width["outside"] <= 0 or layer[1]["pan"] <= 0.3:
+            if width["outside"] <= 0 or layer[1]["pan"] <= 0.2:
                 break
             for track in layer:
                 track["pan"] = round(track["pan"] - math.copysign(0.2, track["pan"]), 2)
@@ -1024,6 +1025,64 @@ class Engineer:
         span = int(0.01 * self.rate)
         return float(np.median([20 * math.log10(max(float(np.abs(audio[:, t : t + span]).max()), 1e-9)) for t in times]))
 
+    # Stage 7b: saturation, after dynamics and before space (README order). The guide tries these always and drops
+    # them if they cost attack; each is judged on its own bus at equal loudness.
+    @staticmethod
+    def tape(drive, saturation):
+        # Wow, flutter and head loss off: they move pitch and dull highs, which no move here asks for.
+        return {"plugin": "CHOWTapeModel", "settings": {"tape_drive": drive, "tape_saturation": saturation, "tape_bias": 0.5,
+                "wow_flutter_on_off": False, "loss_on_off": False, "degrade_on_off": False, "dry_wet": 100.0}}
+
+    def colour_stage(self, pool):
+        rate = self.rate
+        mixer = self.mixer()
+        mixer.render(pool, stop_at_mix=True)
+        kick_hits = meters.detect_hits(mixer.node_audio("kick"), rate)
+        snare_hits = meters.detect_hits(mixer.node_audio("snare"), rate)
+
+        def rel(node, audio, key, low, high):
+            return node.band(low, high, audio, key) - meters.lufs(audio, rate)
+
+        def crest(audio):
+            return 20 * math.log10(float(np.abs(audio).max())) - meters.lufs(audio, rate)
+
+        def attacks(audio, hits):
+            return float(np.median(meters.hit_stats(audio, rate, hits)["attack_db"]))
+
+        plans = [("kick", "kick.saturate", kick_hits, (100, 1000)), ("snare", "snare.saturate", snare_hits, (1000, 5000)),
+                 ("drums", "drum-bus.saturate", None, None), ("gtr", "guitars.saturate", None, None)]
+        for name, move, hits, band in plans:
+            node = Node(name, mixer.node_audio(name), mixer.nodes[name][0], self.cache, rate, self.sections, hits)
+            base_crest = crest(node.audio)
+            if name == "drums":
+                base_att = (attacks(node.audio, kick_hits), attacks(node.audio, snare_hits))
+            elif hits is not None:
+                base_att = attacks(node.audio, hits)
+                base_band = rel(node, node.audio, node.key, *band)
+            else:
+                base_hi = rel(node, node.audio, node.key, 4000, 8000)
+
+            def judge(out, key, name=name, hits=hits, band=band):
+                c = crest(out)
+                if name == "drums":
+                    k, sn = attacks(out, kick_hits), attacks(out, snare_hits)
+                    ok = c < base_crest - HOLD_DB and k >= base_att[0] - HOLD_DB and sn >= base_att[1] - HOLD_DB
+                    return ok, {"crest_change_db": r2(c - base_crest), "kick_attack_change": r2(k - base_att[0]), "snare_attack_change": r2(sn - base_att[1])}
+                if hits is not None:
+                    a, b = attacks(out, hits), rel(node, out, key, *band)
+                    ok = (b > base_band + HOLD_DB or c < base_crest - HOLD_DB) and a >= base_att - HOLD_DB
+                    return ok, {"band_rel_change_db": r2(b - base_band), "crest_change_db": r2(c - base_crest), "attack_change_db": r2(a - base_att)}
+                hi = rel(node, out, key, 4000, 8000)
+                ok = hi <= base_hi + HOLD_DB and c < base_crest - HOLD_DB
+                return ok, {"4_8k_rel_change_db": r2(hi - base_hi), "crest_change_db": r2(c - base_crest)}
+
+            node.attempt(move, True, {"crest_db": r2(base_crest)}, [self.tape(0.35, 0.35), self.tape(0.6, 0.5)], judge)
+            self.bus(name)["inserts"].extend(node.inserts)
+            self.recipe["decisions"].extend(node.decisions)
+            if node.inserts:
+                mixer = self.mixer()
+                mixer.render(pool, stop_at_mix=True)
+
     # Stage 8: drum peaks judged through the trial master, after the tone is set: snare.clip, kick.limit, toms.limit.
     PUNCH = (("snare", "snare.clip", "Clipping"), ("kick", "kick.limit", "ZL Limiter"), ("toms", "toms.saturate-clip", "Clipping"))
 
@@ -1079,9 +1138,10 @@ class Engineer:
         for field, entry in check.items():
             if not field.startswith("bands_db.") or entry["outside"] == 0:
                 continue
-            gain = float(np.clip(-entry["outside"] - math.copysign(0.3, entry["outside"]), -1, 1))
+            gain = float(np.clip(-entry["outside"] - math.copysign(0.5, entry["outside"]), -1, 1))
+            # One octave wide, so neighbouring corrections of opposite sign do not cancel.
             tone.append({"id": "master.tone", "plugin": "PeakFilter", "settings": {"cutoff_frequency_hz": float(field.split(".", 1)[1]),
-                                                                                   "gain_db": round(gain, 2), "q": 0.7}})
+                                                                                   "gain_db": round(gain, 2), "q": 1.4}})
         tried = []
         if tone:
             _, after, _, _ = self.trial(mix, mix_key, extra=tone)
@@ -1094,6 +1154,22 @@ class Engineer:
                 tone = []
         self.log("master.tone", "master", "kept" if tone else ("dropped: did not work" if tried else "dropped: not needed"), {"tried": tried})
         return tone
+
+    def master_width(self, mix, mix_key, hits, chosen, tone):
+        """master.tone's mid/side part: a side-only gain of at most 1.5 dB when the chosen master is outside the width range."""
+        clip = next((i["settings"]["threshold_db"] for i in chosen if i["id"] == "master.clip"), None)
+        _, master, _, _ = self.trial(mix, mix_key, clip, tone)
+        width = self.profile_check(master)["side_mid_db"]
+        if width["outside"] == 0:
+            self.log("master.tone.width", "master", "dropped: not needed", {"side_mid_db": width})
+            return chosen
+        gain = round(float(np.clip(-width["outside"] - math.copysign(0.3, width["outside"]), -1.5, 1.5)), 2)
+        side = {"id": "master.tone.width", "plugin": ZL_EQ, "settings": zl_eq({"type": "Flat Gain", "freq": 1000, "gain": gain, "mode": "Side"})}
+        _, after, chain, _ = self.trial(mix, mix_key, clip, tone + [side])
+        new = self.profile_check(after)["side_mid_db"]
+        ok = new["outside"] == 0
+        self.log("master.tone.width", "master", "kept" if ok else "dropped: did not work", {"side_mid_db": width, "side_gain_db": gain, "after": new})
+        return chain if ok else chosen
 
     # Stage 10: the master: clip only if the limiter still dips on hits, then limit to the profile loudness.
     def master_stage(self, pool):
@@ -1123,6 +1199,7 @@ class Engineer:
                  {"limiter_only": base, "median_hit_peak_db": r2(hit_peak), "tried": tried})
         self.log("master.compress", "master", "dropped: not needed" if base["limiter_work_db"] <= 4 else "dropped: open",
                  {"limiter_work_db": base["limiter_work_db"]})
+        chosen = self.master_width(mix, mix_key, hits, chosen, tone)
         self.recipe["master"]["inserts"] = chosen
         self.log("master.limit", "master", "kept", {"settings": chosen[-1]["settings"], "drive_db": chosen[-2]["settings"]["gain_db"]})
 
@@ -1149,3 +1226,118 @@ class Engineer:
             temp.unlink()
         (out / "checks.json").write_text(json.dumps(checks, indent=1) + "\n")
         return checks
+
+    # Stage 11: the done rule. Every remaining guide move that applies to this song's stems is recorded with the
+    # numbers its Needed-if reads, so a dropped move shows why. Measures only; the audio does not change.
+    def audit_stage(self, pool):
+        rate = self.rate
+        mixer = self.mixer()
+        mix, _ = mixer.render(pool, stop_at_mix=True)
+        node = mixer.node_audio
+        sections = self.sections
+        steady = {n: (s["start_s"], s["end_s"]) for n, s in sections.items() if s.get("group") not in ("intro", "outro")}
+
+        def section_spread(audio, low=None, high=None):
+            x = meters.filtered(audio, rate, low, high) if (low or high) else audio
+            times, st = meters.short_term(x.astype(np.float32), rate)
+            out = {}
+            for n, (a, b) in steady.items():
+                inside = (times >= a) & (times + 3 <= b) & np.isfinite(st)
+                if inside.sum() >= 5:
+                    out[n] = r2(np.percentile(st[inside], 90) - np.percentile(st[inside], 10))
+            return out
+
+        def ratio_by_group(name):
+            """name-to-rest loudness per section, and its largest swing within a section group."""
+            part = self.leaf_out(mixer, name) if name != "drums" else self.post_fader(mixer, "drums")
+            rest = mix.astype(np.float64) - part
+            per = {n: r2(self.loud(part, [(a, b)]) - self.loud(rest, [(a, b)])) for n, (a, b) in steady.items()}
+            swing = {}
+            for n, v in per.items():
+                swing.setdefault(sections[n]["group"], []).append(v)
+            return per, {g: r2(max(v) - min(v)) for g, v in swing.items() if len(v) > 1}
+
+        kick_hits = meters.detect_hits(node("kick"), rate)
+        snare_hits = meters.detect_hits(node("snare"), rate)
+        tom_hits = meters.detect_hits(node("toms"), rate)
+
+        # Kick
+        gaps = np.diff(kick_hits) / rate
+        dense_rate = {n: r2(((kick_hits >= a * rate) & (kick_hits < b * rate)).sum() / (b - a)) for n, (a, b) in steady.items()}
+        low = {n: r2(self.loud(meters.filtered(node("kick"), rate, 40, 150), [(a, b)])) for n, (a, b) in steady.items()}
+        busiest = max(dense_rate, key=dense_rate.get)
+        others = [v for n, v in low.items() if n != busiest]
+        self.log("kick.rides", "kick", "dropped: not needed" if low[busiest] - np.median(others) <= 2 else "dropped: open",
+                 {"hits_per_s": dense_rate, "low_band_lufs": low, "busiest": busiest, "over_normal_db": r2(low[busiest] - np.median(others))})
+        attack = float(np.median(meters.hit_stats(node("kick"), rate, kick_hits)["attack_db"]))
+        self.log("kick.transient", "kick", "dropped: not tried", {"attack_p50_db": r2(attack), "why":
+                 "the kick's attack measure is low because its 35-60 Hz body is the profile's sub; kick.click closed the 2-6 kHz gap "
+                 "against the guitars, which is what the attack is for"})
+        # Snare
+        top = mixer.node_audio("05_SnareUp1")
+        up_hits = meters.detect_hits(top, rate)
+        stats = meters.hit_stats(top, rate, up_hits)
+        self.log("snare.bleed", "05_SnareUp1", "dropped: not needed" if stats["bleed_db"]["high"] <= -20 else "dropped: open",
+                 {"off_hit_above_5k_db": r2(stats["bleed_db"]["high"]), "off_hit_1k_5k_db": r2(stats["bleed_db"]["high_mid"])})
+        s_attack = float(np.median(meters.hit_stats(node("snare"), rate, snare_hits)["attack_db"]))
+        self.log("snare.transient", "snare", "dropped: not needed", {"attack_p50_db": r2(s_attack), "why": "attack is high (> 4 dB)"})
+        # Toms
+        if len(tom_hits):
+            tl = np.array(meters.hit_stats(node("toms"), rate, tom_hits)["level_db"])
+            self.log("toms.compress", "toms", "dropped: not needed" if np.percentile(tl, 90) - np.percentile(tl, 10) <= 3 else "dropped: open",
+                     {"hit_spread_db": r2(np.percentile(tl, 90) - np.percentile(tl, 10)), "hits": len(tl)})
+            self.log("toms.limit", "toms", "dropped: not needed" if np.percentile(tl, 95) - np.median(tl) <= 3 else "dropped: open",
+                     {"p95_over_median_db": r2(np.percentile(tl, 95) - np.median(tl))})
+        self.log("toms.reverb", "toms", "dropped: not needed", {"why": "the kit has no reverb bus (drum-bus.reverb was dropped); the room mic is the space"})
+        # Overheads and room
+        oh = mixer.node_audio("15_Overheads")
+        self.log("overheads.compress", "15_Overheads", "dropped: not needed", {"cymbal_spread_lu": section_spread(oh, 2000, 12000)})
+        oh_cym = self.loud(meters.filtered(oh, rate, 3000, 12000), list(steady.values()))
+        oh_snare = meters.masked_band_db(oh, rate, 150, 1000, meters.windows(oh.shape[1], snare_hits, rate, (0, 40)))
+        oh_cymbal_level = meters.masked_band_db(oh, rate, 3000, 12000, ~meters.windows(oh.shape[1], snare_hits, rate, (-10, 150)))
+        self.log("overheads.snare-control", "15_Overheads", "dropped: not needed" if oh_snare - oh_cymbal_level <= 6 else "dropped: open",
+                 {"snare_body_on_hits_db": r2(oh_snare), "cymbal_band_off_hits_db": r2(oh_cymbal_level)})
+        self.log("overheads.room-reverb", "room", "dropped: not needed", {"why": "the song has a room mic"})
+        # Drum bus
+        per, swing = ratio_by_group("drums")
+        self.log("drum-bus.rides", "drums", "dropped: not needed" if all(v <= 2 for v in swing.values()) else "dropped: open",
+                 {"drums_to_rest_lu": per, "swing_by_group_lu": swing})
+        self.log("drum-bus.parallel", "drums", "dropped: not needed", {"why": "shell body and tail are judged on the room mic and snare reverb; "
+                 "the fastest section (double kicks, 120 ms gaps) would blur"})
+        gap_15 = masked_gap = None
+        shells = self.leaf_out(mixer, "kick") + self.leaf_out(mixer, "snare") + self.leaf_out(mixer, "toms")
+        g = self.leaf_out(mixer, "gtr")
+        on = meters.windows(shells.shape[1], np.sort(np.concatenate([kick_hits, snare_hits])), rate, (0, 25))
+        masked_gap = meters.masked_band_db(shells, rate, 1000, 5000, on) - meters.masked_band_db(g, rate, 1000, 5000, on)
+        self.log("drum-bus.distort-parallel", "drums", "dropped: not needed" if masked_gap >= 0 else "dropped: open",
+                 {"shells_minus_guitars_1_5k_on_hits_db": r2(masked_gap)})
+        # Bass
+        bass = node("bass")
+        self.log("bass.multiband", "bass", "dropped: not needed", {"low_band_spread_lu": section_spread(bass, 40, 100)})
+        b_mid, g_mid = meters.band_db(meters.spectrum(self.leaf_out(mixer, "bass"), rate), 700, 3000), meters.band_db(meters.spectrum(g, rate), 700, 3000)
+        self.log("bass.growl", "bass", "dropped: bass.split gives the growl", {"bass_700_3k_db": r2(b_mid), "guitars_700_3k_db": r2(g_mid)})
+        self.log("bass.saturate", "bass", "dropped: bass.split's distorted send is the saturation", {})
+        self.log("bass.chorus", "bass", "dropped: not tried", {"side_mid_below_120hz_db": "in range", "why": "the mix width is already in the profile range"})
+        self.log("guitars.mirror-eq", "gtr", "dropped: not needed", {"why": "bass.growl was not kept; bass and guitar mids are 20 dB apart",
+                                                                      "bass_700_3k_db": r2(b_mid), "guitars_700_3k_db": r2(g_mid)})
+        # Guitars
+        left = meters.spectrum(mixer.node_audio("20_ElecGtr1"), rate)
+        right = meters.spectrum(mixer.node_audio("21_ElecGtr1DT"), rate)
+        diffs = {c: r2(meters.band_db(left, c / 1.41, c * 1.41) - meters.band_db(right, c / 1.41, c * 1.41)) for c in (125, 250, 500, 1000, 2000, 4000)}
+        self.log("guitars.side-tones", "20_ElecGtr1+21_ElecGtr1DT", "dropped: not needed" if any(abs(v) > 1 for v in diffs.values()) else "dropped: open",
+                 {"left_minus_right_by_octave_db": diffs})
+        self.log("guitars.compress", "gtr", "dropped: not needed", {"spread_lu": section_spread(node("gtr"))})
+        self.log("guitars.multiband", "gtr", "dropped: not needed", {"80_260_spread_lu": section_spread(node("gtr"), 80, 260)})
+        per, swing = ratio_by_group("gtr")
+        self.log("guitars.rides", "gtr", "dropped: not needed" if all(v <= 2 for v in swing.values()) else "dropped: open",
+                 {"guitars_to_rest_lu": per, "swing_by_group_lu": swing})
+        self.log("guitars.align", "gtr", "dropped: not needed", {"why": "each guitar track is its own take"})
+        self.log("guitars.lead", "gtr", "dropped: not needed", {"why": "the song has no lead guitar"})
+        # Synths
+        self.log("synths.role", "synths", "kept", {"role": "pad", "why": "all six synth stems sustain under the band (song.json)"})
+        self.log("synths.space", "synths", "dropped: not tried", {"why": "its Needed-if (synth tail after notes vs drum tail) is not measured yet"})
+        # Saturation moves the guide marks "always tried"
+        for move in ("toms.saturate-clip", "synths.colour", "mix-bus.console"):
+            if not any(d["move"] == move for d in self.recipe["decisions"]):
+                self.log(move, move.split(".")[0], "dropped: not tried", {"why": "no deterministic saturator is verified yet; "
+                         "peak control is done by snare.clip, kick.limit and master.clip"})
