@@ -1,5 +1,6 @@
 import copy
 
+import pytest
 import soundfile
 
 import daw
@@ -49,3 +50,10 @@ def test_cached_render_equals_fresh(tmp_path):
         changed = copy.deepcopy(RECIPE)
         edit(changed)
         assert master(tmp_path, changed, tmp_path / "a") == master(tmp_path, changed, tmp_path / f"fresh{index}")
+
+
+def test_a_bundle_not_in_plugins_lock_does_not_load(tmp_path, monkeypatch):
+    (tmp_path / "Unlocked.vst3").mkdir()
+    monkeypatch.setattr(daw, "PLUGINS", tmp_path)
+    with pytest.raises(ValueError, match="plugins.lock"):
+        daw.load("Unlocked", {})
