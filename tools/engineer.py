@@ -443,6 +443,8 @@ class Engineer:
     LOWMID_BUILDUP_DB = 2.5
     AIR_TILT_DB = -10.5
     PRESENCE_TILT_DB = -2.0
+    KICK_CLICK_PROMINENCE = 5.0
+    SNARE_CRACK_PROMINENCE = 7.0
     SUB_TILT_DB = -6.3
     CREST_LOSS_DB = 3.0
     MIN_SIDE_MID_DB = -12.0
@@ -955,7 +957,35 @@ class Engineer:
         self.tilt(self.rendered(pool), "presence", (2000, 4000), (125, 250), self.PRESENCE_TILT_DB, 1,
                   lambda g: {"plugin": "PeakFilter", "settings": {"cutoff_frequency_hz": 3000.0, "gain_db": g, "q": 0.7}}, (1.5, 3.0, 4.5, 6.0))
         self.tilt(self.rendered(pool), "air", (8000, 16000), (1000, 4000), self.AIR_TILT_DB, 1,
-                  lambda g: {"plugin": "HighShelfFilter", "settings": {"cutoff_frequency_hz": 10000.0, "gain_db": g, "q": 0.707}}, (2.0, 4.0, 6.0, 8.0))
+                  lambda g: {"plugin": "HighShelfFilter", "settings": {"cutoff_frequency_hz": 7000.0, "gain_db": g, "q": 0.707}}, (2.0, 4.0, 6.0))
+        self.attack_eq(self.rendered(pool), "kick", "kick.click", "kick_click", 4000.0, self.KICK_CLICK_PROMINENCE)
+        self.attack_eq(self.rendered(pool), "snare", "snare.crack", "snare_crack", 5000.0, self.SNARE_CRACK_PROMINENCE)
+
+    def attack_eq(self, mixer, name, move, key, hz, target):
+        """Click and crack: after the tone moves, a bell on the drum's attack band until its hits stand out of the
+        full mix by the rule (the guitars' presence is what masks them)."""
+        if not self.has(name):
+            return
+        kick_s, snare_s = self.drum_times(mixer)
+        before = punch_of(self.mix_of(mixer), self.rate, kick_s, snare_s)[key]
+        numbers = {key: before, "rule_db": target}
+        if before is None or before >= target:
+            self.log(move, name, "dropped: not needed", numbers)
+            return
+        tried, kept = [], None
+        for gain in (2.0, 4.0, 6.0):
+            insert = {"id": move, "plugin": "PeakFilter", "settings": {"cutoff_frequency_hz": hz, "gain_db": gain, "q": 0.8}}
+            out, k = daw.chain(self.cache, self.rate, mixer.nodes[name][0], lambda: mixer.node_audio(name), [insert])
+            found = punch_of(self.mix_of(mixer, replace={name: (out, k)}), self.rate, kick_s, snare_s)[key]
+            ok = found >= before + 0.5
+            tried.append({"gain_db": gain, key: found, "ok": ok})
+            if ok:
+                kept = insert
+                if found >= target:
+                    break
+        if kept:
+            self.bus(name)["inserts"].append(kept)
+        self.log(move, name, "kept" if kept else "dropped: did not work", numbers | {"tried": tried})
 
     def duck_bass(self, mixer):
         """Low-end ownership: the bass dips below 120 Hz on kick hits when the two still overlap there."""
@@ -1049,22 +1079,27 @@ class Engineer:
             self.log(move, "mix", "dropped: not needed", numbers)
             return
         shares = {n: meters.band_db(meters.spectrum(self.leaf_out(mixer, n)[:, self.dense], self.rate), *moved) for n in self.leaves()}
-        owner = max(shares, key=shares.get)
-        numbers |= {"owner": owner, "owner_db": {n: r2(v) for n, v in shares.items()}}
-        tried, kept, reached = [], None, t0
-        for gain in gains:
-            insert = {"id": move, **make(gain)}
-            out, key = daw.chain(self.cache, self.rate, mixer.nodes[owner][0], lambda: mixer.node_audio(owner), [insert])
-            t = measure(self.mix_of(mixer, replace={owner: (out, key)}))
-            ok = (t - t0) * direction >= 0.5 and (t - target) * direction <= 1.0
-            tried.append({"gain_db": gain, "tilt_db": r2(t), "ok": ok})
-            if ok:
-                kept, reached = insert, t
-                if (target - t) * direction <= 0.5:
-                    break
-        if kept:
-            self.bus(owner)["inserts"].append(kept)
-        self.log(move, owner, "kept" if kept else "dropped: did not work", numbers | {"tried": tried})
+        numbers |= {"owner_db": {n: r2(v) for n, v in shares.items()}}
+        reached, replaced = t0, {}
+        # The two sources that own most of the moved band, in turn: the second only if the first cannot reach the rule.
+        for owner in sorted(shares, key=shares.get, reverse=True)[:2]:
+            if (target - reached) * direction <= 0.5:
+                break
+            tried, kept, start = [], None, reached
+            for gain in gains:
+                insert = {"id": move, **make(gain)}
+                out, key = daw.chain(self.cache, self.rate, mixer.nodes[owner][0], lambda: mixer.node_audio(owner), [insert])
+                t = measure(self.mix_of(mixer, replace=replaced | {owner: (out, key)}))
+                ok = (t - start) * direction >= 0.5 and (t - target) * direction <= 1.0
+                tried.append({"gain_db": gain, "tilt_db": r2(t), "ok": ok})
+                if ok:
+                    kept, reached, kept_audio = insert, t, (out, key)
+                    if (target - t) * direction <= 0.5:
+                        break
+            if kept:
+                self.bus(owner)["inserts"].append(kept)
+                replaced[owner] = kept_audio
+            self.log(move, owner, "kept" if kept else "dropped: did not work", numbers | {"tried": tried})
         rest = (target - reached) * direction
         if rest > 1.0 and move != "sub.cut":
             gain = round(float(min(3.0, rest)) * direction, 2)
@@ -1152,7 +1187,7 @@ class Engineer:
         mix_key = mixer.nodes["mix"][0]
         kick_s, snare_s = self.drum_times(mixer)
         best, tried = None, []
-        for clip in (-3.0, -5.0):
+        for clip in (-2.0, -3.0, -5.0):
             self._last_drive = None
             try:
                 out, chain, level = self.trial(mix, mix_key, clip_db=clip)
