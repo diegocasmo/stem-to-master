@@ -2,72 +2,54 @@
 
 Goal: a crack that cuts through dense guitars, a body with weight, and hits that survive the master limiter.
 
-### snare.blend
-- **Why:** the top mic gives body and attack, the bottom mic adds crack and wire sizzle, the sample gives consistency. Their balance and phase set the snare sound before any EQ.
-- **Start:** top as the main mic. Flip the bottom mic's polarity if the sum loses body. Bottom and sample under the top. Check against the overheads.
-- **Tool:** stem `gain_db`, `invert`, `offset_samples`.
-- **Needed if:** the snare has more than one mic or sample.
-- **Worked if:** at fixed levels, sum gain in 150-400 Hz is the highest of the polarity and timing options tried, and attack rises at equal snare-bus loudness.
-
-### snare.bleed
-- **Why:** hi-hat and cymbal spill in the top mic gets louder with every compressor and EQ boost, and smears the cymbals.
-- **Start:** expand only the band above 2-3 kHz between hits, then maybe a few dB of broadband expansion. Or a de-esser near 4.5 kHz; one engineer found software de-essers no match for his hardware one, so measure it.
-- **Tool:** `TDR Nova` (dynamic band), Airwindows `DeBess`, `T-De-Esser 2`.
-- **Needed if:** off-hit energy above 3 kHz in the top mic is within 20 dB of its hits.
-- **Worked if:** off-hit high-band energy falls and every hit, ghost notes included, keeps its attack.
+### snare.align
+- **Why:** top and bottom mics face opposite ways and sit apart. Out of polarity or time, they cancel the body.
+- **Start:** the mic with the most 150-400 Hz is the reference. Each other mic, in that order, is checked against the sum of the ones before it, inside 0-100 ms of the reference's snare hits: polarity as recorded or flipped, offset 0 or the cross-correlation lag within ±6 ms.
+- **Tool:** track `invert`, `offset_samples`.
+- **Needed if:** the snare has two or more mics (sample stems excluded).
+- **Worked if:** the option with the highest sum gain in 150-400 Hz (rounded to 0.1 dB), then in 2-6 kHz, wins. Kept if it flips or moves the mic; else dropped as recorded.
 
 ### snare.hpf-lpf
-- **Why:** removes kick spill below the snare body and cymbal spill above it.
-- **Start:** top: high-pass 70 Hz; low-pass down to about 12 kHz if the bottom mic gives the highs. Bottom: high-pass 90 Hz.
-- **Tool:** `HighpassFilter`, `LowpassFilter`.
-- **Needed if:** the top mic holds kick energy below 70 Hz on kick hits, or cymbal energy above 12 kHz.
-- **Worked if:** that energy falls, 150-250 Hz holds, and sum gain with the bottom mic holds.
+- **Why:** removes kick spill below the snare body.
+- **Start:** a 12 dB/oct high-pass at 80 Hz on each snare mic (not samples). No low-pass is tried.
+- **Tool:** `ZL Equalizer 2`.
+- **Needed if:** the mic's 20-80 Hz is within 20 dB of its 150-250 Hz.
+- **Worked if:** 20-80 Hz falls by at least 1 dB and 150-250 Hz holds within 0.5 dB.
+
+### snare.blend
+- **Why:** the top mic gives body and attack, the bottom mic crack and wire sizzle. Their balance sets the snare sound.
+- **Start:** the mic with the most 150-350 Hz at 0 dB; every other mic at 0, -4, -8, -12 dB or muted. A full grid for up to three mics, else one mic at a time in order.
+- **Tool:** track `fader_db` (a muted mic gets -60 dB).
+- **Needed if:** the snare has two or more mics (sample stems excluded).
+- **Worked if:** among blends whose crack prominence stays within 1 dB of the first mic alone, the highest body plus crack prominence wins. Logged kept only if another mic sits at -4, -8 or -12 dB; a blend that only mutes mics is applied but logged dropped.
+
+### snare.sample-blend
+- **Why:** a sample reinforces the hits it doubles only at the close mics' level.
+- **Start:** the sample's fader is the mics' median hit level minus the sample's, each on its own snare hits.
+- **Tool:** track `fader_db` on the sample stem.
+- **Needed if:** the snare has a sample stem, a mic, and at least 2 hits in each.
+- **Worked if:** always kept; it is a level match, not a trial.
 
 ### snare.ring-cut
-- **Why:** a ringing note or boxy low mids make the snare sound small and tubby.
-- **Start:** narrow cuts on the ring (300-900 Hz) for a dry snare; a wide cut at 200-500 Hz if tubby, 500 Hz-1 kHz if flat. A dynamic cut at the ~200 Hz fundamental stops soft hits sounding boxy.
-- **Tool:** `PeakFilter`, `TDR Nova`.
-- **Needed if:** a narrow peak rises more than 6 dB over its neighbours or decays slower than the rest of the snare, or 200-500 Hz sits within 3 dB of the snare's 150-250 Hz body.
-- **Worked if:** the peak, its decay or the build-up falls and the body holds.
+- **Why:** a ringing note makes the snare sound small and tubby.
+- **Start:** on the snare bus input, a cut at the peak in 300-900 Hz that rises most: -4 then -6 dB, Q 4.
+- **Tool:** `PeakFilter`.
+- **Needed if:** a peak in 300-900 Hz rises more than 6 dB over the median of its 1/3-octave neighbourhood.
+- **Worked if:** the band within ±8% of the peak falls by more than 0.5 dB and 150-250 Hz holds within 0.5 dB.
 
-### snare.body-crack
-- **Why:** sets weight (100-200 Hz), crack (2-4 kHz) and air (6-10 kHz) against the guitars.
-- **Start:** a bell at 100-200 Hz for a tight body (a 100 Hz shelf is fatter but muddier); a small boost at 2-4 kHz, which gets hard fast; a shelf at 6-10 kHz if the hats allow.
-- **Tool:** `PeakFilter`, `LowShelfFilter`, `HighShelfFilter`.
-- **Needed if:** in the first 25 ms of snare hits, the snare's 2-5 kHz energy is below the guitars' 2-5 kHz energy, or its body sits low in the mix.
-- **Worked if:** that gap closes in the full mix at equal loudness, and the hats don't rise with it.
+### snare.crack
+- **Why:** the crack must cut through the guitars' presence, which masks it.
+- **Start:** after the tone moves, a bell at 5 kHz, Q 0.8, on the snare bus: +2, +4, +6 dB, stopping at the first that reaches the rule.
+- **Tool:** `PeakFilter`.
+- **Needed if:** snare crack prominence (2-8 kHz) in the full mix is under `SNARE_CRACK_PROMINENCE` 7.0 dB.
+- **Worked if:** crack prominence rises by at least 0.5 dB. The last gain that passed is kept.
 
-### snare.compress
-- **Why:** shapes the hit. A slow attack keeps the crack; the release sets how long the body rings.
-- **Start:** top: attack 10-30 ms, release 50-100 ms, 4:1 to 8:1. Bottom: fast attack, fast release, about 8:1, heavy, so a sizzle sits under the top. Some engineers compress the snare only lightly.
-- **Tool:** `TDR Kotelnikov`, `ZL Compressor`, `TDR Molotok`; `WetCompressor` (mode FAST) for the bottom.
-- **Needed if:** attack is low, or hit levels spread more than 3 dB in a steady section.
-- **Worked if:** attack rises or spread falls, off-hit bleed doesn't rise, and gain recovers before the next hit.
+## Not built
 
-### snare.saturate
-- **Why:** harmonics make the crack read on small speakers and thicken the body.
-- **Start:** light tape or tube saturation.
-- **Tool:** `CHOWTapeModel`, `T-Saturator`, Airwindows `Console7Channel`.
-- **Needed if:** always tried; drop it if it costs attack.
-- **Worked if:** at equal loudness, 1-5 kHz energy rises or limiter dip on snare hits falls, without attack loss.
-
-### snare.transient
-- **Why:** more crack without raising the bleed a compressor brings up.
-- **Start:** raise `point` a little, attack only.
-- **Tool:** Airwindows `Point`.
-- **Needed if:** attack is still low after blend, EQ and compression.
-- **Worked if:** attack rises in the full mix and the hats don't.
-
-### snare.clip
-- **Why:** shaving the first milliseconds of peaks means the master limiter does less to the snare. Without it, mastering often kills the snare.
-- **Start:** hard clip, sparingly, judged through the trial master. Then a limiter for the few hits still over.
-- **Tool:** Airwindows `ADClip8` or pedalboard `Clipping`; then `ZL Limiter`.
-- **Needed if:** the trial limiter dips more than 2 dB on snare hits, or snare crest loss through the master is over 3 dB.
-- **Worked if:** at equal master loudness, limiter dip on snare hits falls and snare attack in the master rises.
-
-### snare.reverb
-- **Why:** a short plate or room gives the snare size and places the kit in a space. A dry snare sounds small and boxed in.
-- **Start:** see drum-bus.reverb; the snare feeds it most. A clean snare sample can feed it without being in the dry mix.
-- **Tool:** a send to the drum reverb bus.
-- **Needed if:** the snare has no room mic or reverb path.
-- **Worked if:** tail energy after snare hits rises, while snare attack and the low-band valleys between hits hold.
+- snare.bleed: no song needed it yet.
+- snare.body-crack: snare.crack is the crack boost; the body is set by snare.blend and balance.punch.
+- snare.compress: no song needed it yet.
+- snare.saturate: no song needed it yet.
+- snare.transient: no song needed it yet.
+- snare.clip: the master's clipper (master.clip) takes the hits' peaks instead.
+- snare.reverb: no song needed it yet.

@@ -1,71 +1,75 @@
 # Mixing chains
 
-The standard chain for each source in heavy instrumental music, with the reason for every move and how to measure it. This is the factory's only mixing reference. Settings are starting points; the song's measurements decide the final values.
+The moves the engineer (`tools/engineer.py`) makes for each source in heavy instrumental music, with the reason for every move and how it is measured. This is the factory's only mixing reference. The code is the source of truth; these files describe it.
 
-Each move is a heading `### <chain>.<move>`, where `<chain>` is the file name. Its id never changes, so recipes and checks can name it. Under it: **Why**, **Start**, **Tool**, **Needed if**, **Worked if**. Where engineers disagree, the move says what the other approach is.
+Each move is a heading `### <id>`, where `<id>` is exactly the id the engineer logs in the recipe's `decisions` and puts on the inserts it keeps. Recipes and checks name moves by it. Under it: **Why**, **Start**, **Tool**, **Needed if**, **Worked if**. Moves on one source live in the file of their chain. [context.md](context.md) holds the moves on the whole song or the full mix (classification, balance, low-mid, sub, presence, air, top), with the ids the engineer logs. Each file ends with `## Not built`: moves engineers use that the engineer does not make yet.
 
 | File | Covers |
 |---|---|
+| [context.md](context.md) | Stem classification, full-band frames, balance and punch faders, full-mix tone moves |
 | [kick.md](kick.md) | Kick mics and samples |
 | [snare.md](snare.md) | Snare top, bottom and samples |
 | [toms.md](toms.md) | Toms |
 | [overheads.md](overheads.md) | Overheads, hi-hat, cymbal spots, room mics |
-| [drum-bus.md](drum-bus.md) | Drum groups, parallel paths, drum reverb |
+| [drum-bus.md](drum-bus.md) | The drums bus |
 | [bass.md](bass.md) | Bass |
 | [guitars.md](guitars.md) | Rhythm and lead guitars |
 | [synths.md](synths.md) | Synths, pads, piano |
 | [mix-bus.md](mix-bus.md) | Whole mix while mixing |
-| [master.md](master.md) | The master |
+| [master.md](master.md) | The master and the export gates |
 
 ## Order
 
-1. Gain staging, then polarity, timing and blend of every multi-mic source. The blend decides most of a drum's sound, so set it before any EQ.
-2. Drums first, overheads before shells. Then bass with the drums playing, then rhythm guitars, then leads, synths and keys.
-3. Within a source, remove problems before adding colour. By default: filters and cuts, then dynamics, then saturation, then space. A source may change this order when its chain says so (a bass can be compressed before EQ).
-4. Mix through the mix-bus chain and a trial limiter from the start, so every move is judged at release loudness.
-5. Corrective rides (notes and sections that jump or drop) come before heavy compression, so the compressor does less.
+`Engineer.stages()` runs these stages in order; `tools/run.py` then exports. Within a file, moves are listed in this order.
+
+1. **setup:** classify the stems (in the constructor), pan guitars, toms and close cymbals, align kick and snare mics, find the full-band frames.
+2. **tracks:** per-track inserts, in parallel workers: the toms edit, snare, overhead and close-cymbal high-passes, the room chain, bass, guitar and synth filters.
+3. **drums:** kick and snare mic and sample blends, close-cymbal and guitar-pair faders; then on the kick bus the tail, weight and mud cut, and the snare ring cut.
+4. **balance:** static bus faders against the reference group, then kick and snare faders for punch.
+5. **context:** on the full mix: kick-keyed ducks, low-mid cut, sub cut, presence, air, top, lead space, kick click, snare crack.
+6. **glue:** drum-bus compression, kept only if punch holds.
+7. **rebalance:** a trial master measures the punch the master costs; the kick and snare faders are set again to targets that add it back.
+8. **master:** drive, clip and limiter, at the profile loudness or a step below it.
+9. **export:** render the recipe, write the 24-bit master, check the gates.
 
 ## How to try a move
 
-Each move has **Needed if** (a measured fault that justifies a trial) and **Worked if** (the measured change that keeps it).
+Each move has **Needed if** (a measured condition that justifies a trial) and **Worked if** (the measured change that keeps it).
 
-- Render the step on and off over the same sections. Compensate latency and match loudness before comparing.
-- Find hits and notes once, on the input, and measure every one of them after processing. Finding them again on the output hides the soft hits a gate or compressor lost.
-- Measure the source, its bus, and the full mix through the trial master. A move that helps the source and hurts the mix is dropped.
-- Test a fast section and a sparse section separately. Fast double-kick and blast passages fail in ways a sparse passage hides.
+- An insert is rendered on and off on the same node (track or bus), from cached audio. Candidates are tried in a fixed order; the move keeps the first that passes, unless its section says otherwise.
+- Hits are found once, on the input, and every one is measured again after processing. Finding them again on the output would hide the soft hits a step lost.
+- Source moves are judged on the source. Context moves are judged on the full mix with the candidate in place (`mix_of`: the drums bus and mix bus run through their inserts), over the full-band frames.
 - A move applies to each source it names: a song with five toms decides `toms.clean` for each tom.
-- Full-mix numbers can be compared with the profile's references. Source settings (gate threshold, wet/dry, mic offset) cannot: the references have no stems.
-- The limits in **Needed if** are starting proposals. Change one only with measurements from a song, and note why.
+- Full-mix limits are rules in `Engineer` (for example `KICK_LOW_PROMINENCE`), the same for every song. The profile's references are only a printed comparison at export; nothing reads them back.
+- A rule changes only with measurements from a song, and the reason goes in the code next to the constant.
 
-No published metric measures punch, tightness or depth on a finished master. A master can sit inside the references' range on every such proxy and still sound amateur; the first song 000 master did. So a move is proven on its own source and bus first, and the full-mix comparison only backs it up.
+No published metric measures punch on a finished master, and a master can sit inside the references' range on every proxy and still sound amateur. So the engineer judges punch by its own hit measures, and the master by how much punch it costs.
 
 ## Measures
 
-- **Attack**: energy in the first 25 ms after a hit over energy 30-100 ms after it, in dB.
-- **Tail**: energy 80-200 ms after a hit over its first 30 ms, in dB.
-- **Valley**: the lowest 40-150 Hz energy between two kicks, over the kick's peak, in dB. Lower means tighter. The energy is the analytic envelope of a zero-phase band-pass, averaged over 10 ms; the peak is the highest point in the first 50 ms after the kick, the valley the lowest from there to 5 ms before the next kick. Gaps under 60 ms are skipped and counted.
-- **Sum gain**: energy of the summed mics over the sum of each mic's energy, per band, across hits. Compare polarity and timing options at the same mic levels: higher is better, and below 0 dB the mics cancel. It is read on the mono sum, where timing and polarity errors between panned mics are heard.
-- **Off-hit bleed**: a mic's mean power between its own hits over its mean power in the first 100 ms of them, per band. Mean power, so the count of hits doesn't change it.
-- **Limiter dip**: the trial limiter's gain drop in the 60 ms after a kick or snare hit, against the 100 ms before it: the median of 5 ms gains before, minus the lowest after. Measured across the last master step only (`--tap master-in` against `trial.wav`), so EQ or clipping before it doesn't count as limiting. Compare two mixes with their trial masters at equal loudness.
-- **Spread**: p90 minus p10 of hit, note or short-term levels in one passage.
-- **Overlap**: in each band and 50 ms frame where both sources are within 6 dB of each other, the weaker source's energy; summed, over the band's total energy of both sources in every frame, in dB. "On kick hits" counts only the samples in the first 25 ms of kick hits, in the 6 dB test and in both sums.
-- **Section loudness**: short-term (3 s) loudness of the windows wholly inside a section, as p10, p50 and p90; its error is the p50 minus the mix's integrated loudness minus the section's `loudness_lu`.
-- **Profile range**: min to max across the profile's references, measured the same way on the mix. With no profile, record these checks as skipped.
-- **Holds**: falls by at most 0.5 dB (0.5 LU for loudness), when a move gives no number. **Rises** and **falls** likewise mean by more than 0.5 dB; **toward** a range means landing in it or moving at least 0.5 dB closer.
-- **Overlap present**: overlap above -15 dB, when a move gives no number.
-- **Damaged hit**: a hit whose level or attack falls more than 1 dB.
-- **Recovery**: the gain a step still takes 25-5 ms before each next hit in the fast passage, against the gain it gives when idle. Recovered is under 1 dB.
+- **Hit times:** `punch.drum_hits` finds kick hits in 30-150 Hz and snare hits in 1-8 kHz (`hits.py` detection on the band's energy), so bleed of the other drum is not counted. Other sources use `hits.py` on the full band.
+- **Prominence:** `punch.prominence`, per hit: band power in 5 ms frames (4th-order zero-phase band-pass), the smoothed peak from 30 ms before to 40 ms after the hit, over the median of 130-50 ms before and 70-150 ms after, in dB. The median over hits is used. Bands: kick low 40-120 Hz, kick click 2-6 kHz, snare body 150-350 Hz, snare crack 2-8 kHz.
+- **Kick tail:** `punch.tail`, per hit: the 40-120 Hz level 80-180 ms after the hit over its peak from 10 ms before to 40 ms after, in dB. Higher is a longer tail.
+- **Hit stats:** `hits.py` per hit: level (envelope peak in the first 25 ms), attack (energy 0-25 ms over 30-100 ms), tail (80-200 ms over 0-30 ms), and off-hit bleed (mean power outside 20 ms before to 200 ms after hits, over mean power in the first 100 ms of hits, per band).
+- **Band level:** power in a band of the long-term spectrum (Welch, 8192 points); third-octave levels for the low-mid build-up.
+- **Masked band level:** band power only inside a sample mask, such as the samples between kick hits (`meters.masked_band_db`).
+- **Sum gain:** energy of two summed mics over the sum of their energies, per band, in the first 100 ms of hits. Below 0 dB the mics cancel.
+- **Note spread:** p90 minus p10 of note levels (`notes.py` finds the notes and their levels).
+- **Side/mid:** side energy over mid energy in a band, in dB.
+- **Loudness and peak:** integrated LUFS (pyloudnorm) and true peak (4x oversampled).
+- **Crest loss:** each prominence in the mix minus the same in the master, in dB.
+- **Export gates:** loudness, true peak, crest loss, kick and snare prominence in the master, and side/mid width. See [master.md](master.md).
+- **Holds:** falls by at most 0.5 dB (`HOLD_DB`), unless the move gives another number.
 
-`analyze` measures whole-file loudness, peaks, octave bands and width; its `hits.py` measures hit level, spread, attack, tail and off-hit bleed, and its `measure.py` valley, overlap, limiter dip, section loudness and profile range; `notes.py` finds notes; `align` measures sum gain. `check` holds each move's evidence contract, computes its default outcome from these measures, and fails decisions that contradict it.
+Standalone tools: `analyze.py` measures whole-file loudness, peaks, octave bands and width; `hits.py` the hit stats; `measure.py` valley, overlap, limiter dip, section loudness and profile range; `notes.py` finds notes; `grade.py` compares a master with the official one. Of these, the engineer reads only `measure.py`'s profile range, for the printed comparison.
 
 ## Done rule
 
-- **Mix:** every move in every chain except `master` that applies to the song's stems is rendered and recorded in the recipe, by id, as kept, changed or dropped, with measurements. A move whose **Needed if** finds no fault is dropped with that check's numbers. A move that is undecided blocks the mix.
-- **Master:** starts only after the mix passes review. The same rule then applies to every `master` move.
+Every implemented move that applies to the song's stems is logged in the recipe's `decisions`, by id, with its target, an outcome and its numbers. The outcome is `kept` (the insert or setting is in the recipe), `dropped: <reason>` (not needed, did not work, or not tried), or `measured` for a measure that later moves read. A move whose **Needed if** finds no fault is dropped with the numbers it checked. Every kept insert carries the move's id.
 
 ## Limits
 
-- Vocals are out of scope: vocal stems are not listed in the recipe. DI tracks (guitar or bass) are never used: not mixed in, re-amped, or used as a timing reference. Sound effects follow synths.md by role.
+- Instrumental only: vocal stems (`vox`, `vocal`, `voice`) and DI stems are left out by name, and silent stems by level; the `stems.classify` decision lists them under `left_out`. DIs are never mixed in, re-amped or used as a timing reference. Sound effects follow synths.
 - No new audio: no sample triggering beyond sample stems that already exist.
 - pedalboard's `HighpassFilter` and `LowpassFilter` are 6 dB/oct. For steeper slopes use `ZL Equalizer 2`.
 
