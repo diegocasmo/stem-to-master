@@ -178,8 +178,9 @@ def grade(song, master_path=None):
         times = np.array([h for h in times if 0.2 < h < length / rate - 0.2])
         if vocals is None:
             return np.array([h for h in times if any(a <= h - 0.13 and h + 0.15 <= b for a, b in spans)])
-        ei, ev = env(bandpass(stems_sum[None], rate, lo, hi), rate), env(bandpass(vocals[None], rate, lo, hi), rate)
-        bias = prominence(ei + ev, times) - prominence(ei, times)
+        # The summed waveform, not summed powers: a vocal can also cancel an instrument for a moment.
+        ei, eiv = env(bandpass(stems_sum[None], rate, lo, hi), rate), env(bandpass((stems_sum + vocals)[None], rate, lo, hi), rate)
+        bias = prominence(eiv, times) - prominence(ei, times)
         return times[np.abs(bias) <= HIT_VOCAL_BIAS_DB]
 
     punch, raw = {}, {}
