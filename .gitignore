@@ -1,0 +1,12 @@
+songs/*/stems/
+songs/*/renders/
+songs/*/cache/
+profiles/*/references/
+plugins/
+.venv/
+__pycache__/
+*.wav
+*.flac
+*.npy
+.DS_Store
+*.local.*
