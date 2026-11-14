@@ -448,6 +448,10 @@ class Engineer:
     SNARE_CRACK_PROMINENCE = 7.0
     SUB_TILT_DB = -6.3
     CREST_LOSS_DB = 3.0
+    # Export gates: the master's kick and snare must still stand out (the tuning songs' officials: kick 9.4-10.6 dB,
+    # snare 10.1-12.9 dB by this measure).
+    KICK_GATE_DB = 8.5
+    SNARE_GATE_DB = 9.0
     MIN_SIDE_MID_DB = -12.0
 
     def __init__(self, song, workers=2):
@@ -1284,8 +1288,8 @@ class Engineer:
                   "crest_loss_db": loss, "punch_db": punch, "side_mid_500_8k_db": r2(side_mid)}
         gates = {"loudness": abs(level - self.TARGET_LUFS) <= 0.05, "true_peak": peak <= self.TARGET_TP,
                  "crest_loss": max(loss.values(), default=0) <= self.CREST_LOSS_DB,
-                 "kick_punch": punch.get("kick_low") is None or punch["kick_low"] >= self.KICK_LOW_PROMINENCE - 2,
-                 "snare_punch": punch.get("snare_body") is None or punch["snare_body"] >= self.SNARE_BODY_PROMINENCE - 2,
+                 "kick_punch": punch.get("kick_low") is None or punch["kick_low"] >= self.KICK_GATE_DB,
+                 "snare_punch": punch.get("snare_body") is None or punch["snare_body"] >= self.SNARE_GATE_DB,
                  "width": side_mid >= self.MIN_SIDE_MID_DB}
         checks["gates"] = {k: bool(v) for k, v in gates.items()}
         checks["export_ok"] = all(gates.values())
