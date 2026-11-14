@@ -1723,8 +1723,9 @@
    "outcome": "kept",
    "numbers": {
     "below_db": -37.3,
-    "keep_db": -31.6,
+    "keep_db": -31.76,
     "lowest_f0_hz": 27.36,
+    "median_f0_hz": 32.67,
     "fundamental_db": -43.48,
     "tried": [
      {
@@ -1738,7 +1739,7 @@
        "q0_q": 0.707
       },
       "below_change": -12.41,
-      "keep_change": -0.14,
+      "keep_change": -0.04,
       "kept": true
      }
     ]
@@ -2705,7 +2706,7 @@
    "numbers": {
     "sub_tilt_db": -2.21,
     "rule_db": -4.0,
-    "notes_under_drop_d": false,
+    "plays_under_drop_d": false,
     "tried": [
      {
       "gain_db": -2.0,
@@ -2741,7 +2742,7 @@
    "numbers": {
     "sub_tilt_db": -4.05,
     "rule_db": -4.0,
-    "notes_under_drop_d": true,
+    "plays_under_drop_d": true,
     "tried": [
      {
       "gain_db": -2.0,

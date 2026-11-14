@@ -41,7 +41,7 @@ Goal: moves on the whole song or the full mix: what each stem is, where the full
 - **Why:** boom under the note or the hit eats headroom. Nothing is boosted: a source with no sub stays without it.
 - **Start:** on the kick bus, then the bass bus: a low shelf at 45 Hz, Q 0.707, -2, -4, -6, -8, -10 dB, until the sub sits `SUB_CUT_DEPTH_DB` 4.0 dB under the trigger (-8 dB).
 - **Tool:** `LowShelfFilter`.
-- **Needed if:** the bus's 25-45 Hz minus its 60-100 Hz, over the full-band frames, is over `SUB_SOURCE_DB` -4.0 dB; or, on the bass, bass.hpf found notes under `SUB_NOTE_HZ` 35 Hz (the notes above its high-pass still fill the sub).
+- **Needed if:** the bus's 25-45 Hz minus its 60-100 Hz, over the full-band frames, is over `SUB_SOURCE_DB` -4.0 dB; or, on the bass, bass.hpf found its typical (median) note under `SUB_NOTE_HZ` 35 Hz (the notes above its high-pass still fill the sub).
 - **Worked if:** each deeper step lowers that tilt by at least 0.5 dB and 60-100 Hz holds within 1 dB. The last step that passed is kept; the first failure stops the search.
 
 ### presence

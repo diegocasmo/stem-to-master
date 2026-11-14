@@ -1026,6 +1026,7 @@
     "below_db": -46.09,
     "keep_db": -30.68,
     "lowest_f0_hz": 39.37,
+    "median_f0_hz": 41.29,
     "fundamental_db": -31.62,
     "tried": [
      {
@@ -1073,6 +1074,7 @@
     "below_db": -42.29,
     "keep_db": -54.03,
     "lowest_f0_hz": 250.57,
+    "median_f0_hz": 250.57,
     "fundamental_db": -55.22,
     "tried": [
      {
@@ -2066,7 +2068,7 @@
    "numbers": {
     "sub_tilt_db": -1.59,
     "rule_db": -4.0,
-    "notes_under_drop_d": false,
+    "plays_under_drop_d": false,
     "tried": [
      {
       "gain_db": -2.0,
@@ -2102,7 +2104,7 @@
    "numbers": {
     "sub_tilt_db": -1.51,
     "rule_db": -4.0,
-    "notes_under_drop_d": false,
+    "plays_under_drop_d": false,
     "tried": [
      {
       "gain_db": -2.0,
