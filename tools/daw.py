@@ -24,7 +24,7 @@ ROOT = Path(__file__).resolve().parents[1]
 PLUGINS = ROOT / "plugins"
 LIBC = ctypes.CDLL(None)
 RAND_SEED = 1
-NATIVE = {"Ride", "Duck", "Shape"}
+NATIVE = {"Ride", "Duck", "Shape", "SoftClip"}
 TOOLS = Path(__file__).resolve().parent
 
 
@@ -147,7 +147,7 @@ def apply(audio, rate, insert, keys, sections=None):
     plugin, settings = insert["plugin"], insert["settings"]
     if plugin in NATIVE:
         context = _Context(keys, sections or {})
-        out = {"Ride": native.ride, "Duck": native.duck, "Shape": native.shape}[plugin](audio.T.astype(np.float64), rate, settings, context)
+        out = {"Ride": native.ride, "Duck": native.duck, "Shape": native.shape, "SoftClip": native.softclip}[plugin](audio.T.astype(np.float64), rate, settings, context)
         return np.ascontiguousarray(out.T, dtype=np.float32)
     instance = load(plugin, settings)
     mono = audio.shape[0] == 1 and isinstance(instance, pedalboard.VST3Plugin)

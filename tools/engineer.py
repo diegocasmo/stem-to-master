@@ -990,42 +990,38 @@ class Engineer:
             self.bus(name)["inserts"].append(kept)
         self.log(move, name, "kept" if kept else "dropped: did not work", numbers | {"tried": tried})
 
-    def duck_bass(self, mixer):
-        """Low-end ownership: the bass dips below 120 Hz on kick hits when the two still overlap there."""
-        if not (self.has("kick") and self.has("bass")):
+    def duck_bass(self, mixer, pool=None):
+        """Low-end ownership: the bass, then the guitars, dip below 150 Hz on kick hits, kept only if the kick's low
+        punch in the full mix rises by 0.5 dB and the source keeps its lows between hits (within 1 dB)."""
+        if not self.has("kick"):
             return
         rate, length = self.rate, mixer.length
         kick_hits = meters.detect_hits(mixer.node_audio("kick"), rate)
-        kick_pf, bass_pf = self.post_fader(mixer, "kick"), self.post_fader(mixer, "bass")
-        on = meters.windows(length, kick_hits, rate, (0, 25))
-        ov = overlap_db(kick_pf, bass_pf, rate, (40, 120), on)
-        between = ~meters.windows(length, kick_hits, rate, (-5, 150))
-        bass_between = meters.masked_band_db(bass_pf, rate, 40, 120, between)
         kick_level = float(np.median(meters.hit_stats(mixer.node_audio("kick"), rate, kick_hits)["level_db"]))
-        base_punch = punch_of(self.mix_of(mixer), rate, kick_hits / rate, [])["kick_low"]
-        tried = []
-        if ov > -15:
+        between = ~meters.windows(length, kick_hits, rate, (-5, 150))
+        replaced = {}
+        for name in ("bass", "gtr"):
+            if not self.has(name):
+                continue
+            base_punch = punch_of(self.mix_of(mixer, replace=replaced), rate, kick_hits / rate, [])["kick_low"]
+            pf = self.post_fader(mixer, name)
+            held0 = meters.masked_band_db(pf, rate, 40, 150, between)
+            tried, kept = [], None
             for r in (3.0, 6.0):
-                insert = {"id": "kick.duck-bass", "plugin": "Duck", "settings": {"key": "kick", "band_hz": [None, 120],
+                insert = {"id": f"kick.duck-{name}", "plugin": "Duck", "settings": {"key": "kick", "band_hz": [None, 150],
                           "threshold_db": round(kick_level - 15, 1), "ratio": 4, "range_db": r, "attack_ms": 1, "release_ms": 80}}
-                node_key = mixer.nodes["bass"][0]
-                out, key = daw.chain(self.cache, rate, node_key, lambda: mixer.node_audio("bass"), [insert], {"kick": mixer.node_audio("kick")},
-                                     {"kick": mixer.nodes["kick"][0]})
-                o = daw.pan_gain(out, self.bus("bass")["fader_db"], 0)
-                new_ov = overlap_db(kick_pf, o, rate, (40, 120), on)
-                held = meters.masked_band_db(o, rate, 40, 120, between)
-                mix = self.mix_of(mixer, replace={"bass": (out, key)})
-                punch = punch_of(mix, rate, kick_hits / rate, [])["kick_low"]
-                ok = new_ov < ov - HOLD_DB and bass_between - held <= 1.0 and punch >= base_punch + 0.5
-                tried.append({"range_db": r, "overlap_db": r2(new_ov), "between_change_db": r2(held - bass_between),
-                              "kick_low_prominence": punch, "kept": ok})
+                out, key = daw.chain(self.cache, rate, mixer.nodes[name][0], lambda: mixer.node_audio(name), [insert],
+                                     {"kick": mixer.node_audio("kick")}, {"kick": mixer.nodes["kick"][0]})
+                held = meters.masked_band_db(daw.pan_gain(out, self.bus(name)["fader_db"], self.bus(name)["pan"]), rate, 40, 150, between)
+                punch = punch_of(self.mix_of(mixer, replace=replaced | {name: (out, key)}), rate, kick_hits / rate, [])["kick_low"]
+                ok = punch >= base_punch + 0.5 and held0 - held <= 1.0
+                tried.append({"range_db": r, "kick_low_prominence": punch, "between_change_db": r2(held - held0), "kept": ok})
                 if ok:
-                    self.bus("bass")["inserts"].append(insert)
-                    break
-            self.log("kick.duck-bass", "bass", "kept" if tried and tried[-1]["kept"] else "dropped: did not work",
-                     {"overlap_db": r2(ov), "kick_low_before": base_punch, "tried": tried})
-        else:
-            self.log("kick.duck-bass", "bass", "dropped: not needed", {"overlap_db": r2(ov)})
+                    kept, kept_audio = insert, (out, key)
+            if kept:
+                self.bus(name)["inserts"].append(kept)
+                replaced[name] = kept_audio
+            self.log(f"kick.duck-{name}", name, "kept" if kept else "dropped: did not work", {"kick_low_before": base_punch, "tried": tried})
 
     LOWMID = [125, 160, 200]
 
@@ -1145,7 +1141,8 @@ class Engineer:
         # Drive, then a clipper at a fixed level takes the hits' peaks, then the limiter holds the true peak.
         chain = [{"id": "master.drive", "plugin": "Gain", "settings": {"gain_db": float(round(gain_db, 4))}}]
         if clip_db is not None:
-            chain.append({"id": "master.clip", "plugin": "Clipping", "settings": {"threshold_db": float(clip_db)}})
+            kind, level = clip_db if isinstance(clip_db, tuple) else ("Clipping", clip_db)
+            chain.append({"id": "master.clip", "plugin": kind, "settings": {"threshold_db": float(level)}})
         chain.append({"id": "master.limit", "plugin": "ZL Limiter", "settings": {
             "output_ceiling_output_ceiling": self.CEILING, "true_peak_true_peak": True, "oversampling_oversampling": "4x",
             "lookahead_lookahead": 2.0, "recovery_recovery": 10.0, "attack_attack": 10.0, "release_release": 50.0}})
@@ -1190,7 +1187,7 @@ class Engineer:
         mix_key = mixer.nodes["mix"][0]
         kick_s, snare_s = self.drum_times(mixer)
         best, tried = None, []
-        for clip in (-2.0, -3.0, -5.0):
+        for clip in (-2.0, -3.0):
             self._last_drive = None
             try:
                 out, chain, level = self.trial(mix, mix_key, clip_db=clip)
@@ -1240,14 +1237,29 @@ class Engineer:
             self.log(f"{name}.clip", name, "kept" if kept else "dropped: master punch did not improve",
                      {"median_hit_peak_db": r2(peak), "tried": tried})
 
+    LOUDNESS_STEPS = (-7.0, -7.5, -8.0)
+
     def master_stage(self, pool):
+        """-7 LUFS is accepted only if kick and snare lose at most 3 dB of punch; otherwise the release loudness
+        steps down by 0.5 LU (to -8 at most) and the quietest step is kept with its gate failing if none passes."""
         mixer = self.rendered(pool)
-        best, tried = self.master_select(mixer, mixer.nodes["mix"][1])
-        if best is None:
-            raise RuntimeError(f"no master chain reached {self.TARGET_LUFS} LUFS: {tried}")
-        self.recipe["master"]["inserts"] = best[1]
-        self.log("master.limit", "master", "kept", {"target_lufs": self.TARGET_LUFS, "tried": tried, "crest_loss_db": best[2],
-                                                   "master_punch": best[3]})
+        tried_all, chosen = [], None
+        for target in self.LOUDNESS_STEPS:
+            self.TARGET_LUFS = target
+            best, tried = self.master_select(mixer, mixer.nodes["mix"][1])
+            tried_all.append({"target_lufs": target, "tried": tried})
+            if best is None:
+                continue
+            chosen = (target, best)
+            if best[0] <= self.CREST_LOSS_DB:
+                break
+        if chosen is None:
+            raise RuntimeError(f"no master chain reached the release loudness: {tried_all}")
+        self.TARGET_LUFS = chosen[0]
+        self.recipe["master"]["target_lufs"] = chosen[0]
+        self.recipe["master"]["inserts"] = chosen[1][1]
+        self.log("master.limit", "master", "kept", {"target_lufs": chosen[0], "tried": tried_all, "crest_loss_db": chosen[1][2],
+                                                   "master_punch": chosen[1][3]})
 
     # ---------- export: render the recipe as written, check the file written ----------
 
@@ -1266,7 +1278,9 @@ class Engineer:
         punch = punch_of(written, self.rate, kick_s, snare_s)
         spec = written[:, self.dense].astype(np.float64)
         side_mid = meters.side_mid_db(meters.filtered(spec, self.rate, 500, 8000))
+        self.TARGET_LUFS = self.recipe["master"].get("target_lufs", self.TARGET_LUFS)
         checks = {"master_lufs": r2(level), "master_true_peak_dbtp": r2(peak), "target_lufs": self.TARGET_LUFS,
+                  "release_default_lufs": self.LOUDNESS_STEPS[0],
                   "crest_loss_db": loss, "punch_db": punch, "side_mid_500_8k_db": r2(side_mid)}
         gates = {"loudness": abs(level - self.TARGET_LUFS) <= 0.05, "true_peak": peak <= self.TARGET_TP,
                  "crest_loss": max(loss.values(), default=0) <= self.CREST_LOSS_DB,
