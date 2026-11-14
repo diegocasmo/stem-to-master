@@ -28,7 +28,7 @@ Goal: moves on the whole song or the full mix: what each stem is, where the full
 - **Start:** kick fader for kick low prominence, snare fader for snare body prominence, in the full mix. Steps 0 to +9 dB, then -1 to -6 dB, limited to 9 dB over and 6 dB under the static balance. Ranges: `MASTER_KICK_RANGE` 9.4-10.6 dB and `MASTER_SNARE_RANGE` 10.1-12.9 dB, raised by the master's loss: `MIX_PUNCH_LOSS` (kick 2.5, snare 1.5 dB) here, the measured loss from balance.punch-targets in rebalance.
 - **Tool:** bus `fader_db`.
 - **Needed if:** the bus exists and has at least 4 hits.
-- **Worked if:** if step 0 is in the range, the fader stays. Else the step closest to the range wins (the smaller move on a tie). If the highest step lifts the measure by less than 1 dB and it is under the range, the fader stays ("dropped: the fader cannot reach the range"). Kept if the fader moved; else "dropped: in range".
+- **Worked if:** if step 0 is in the range, the fader stays. Else the step closest to the range wins (the smaller move on a tie). If the highest step lifts the measure by less than 1 dB and it is under the range, the fader stays. Kept if the fader moved; else "dropped: in range", or "dropped: the fader cannot reach the range" when it stays outside it.
 
 ### lowmid.cut
 - **Why:** a 125-200 Hz build-up makes the mix woolly. It is cut on the source that owns it, not on the whole mix.

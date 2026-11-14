@@ -2184,7 +2184,7 @@
   {
    "move": "balance.punch",
    "target": "kick",
-   "outcome": "dropped: in range",
+   "outcome": "dropped: the fader cannot reach the range",
    "numbers": {
     "range_db": [
      9.67,

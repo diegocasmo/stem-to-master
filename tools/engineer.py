@@ -975,7 +975,7 @@ class Engineer:
                 reach = min(tried, key=lambda t: (max(low - t[key], 0.0, t[key] - high), abs(t["step_db"])))
             chosen = start + reach["step_db"]
             self.bus(name)["fader_db"] = round(chosen, 2)
-            outcome = "dropped: the fader cannot reach the range" if stuck else "dropped: in range"
+            outcome = "dropped: in range" if low <= reach[key] <= high else "dropped: the fader cannot reach the range"
             self.log("balance.punch", name, "kept" if reach["step_db"] else outcome,
                      {"range_db": [r2(low), r2(high)], "tried": tried, "fader_db": round(chosen, 2)})
 
