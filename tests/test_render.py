@@ -39,7 +39,12 @@ def test_cached_render_equals_fresh(tmp_path):
     cold = master(tmp_path, RECIPE, tmp_path / "a")
     assert master(tmp_path, RECIPE, tmp_path / "a") == cold
 
-    # A changed insert resumes from the cached prefix and must still equal a render from nothing.
-    changed = copy.deepcopy(RECIPE)
-    changed["tracks"][1]["inserts"][1]["settings"] = zl_eq({"type": "Peak", "freq": 2500, "gain": -2.0, "q": 1.0})
-    assert master(tmp_path, changed, tmp_path / "a") == master(tmp_path, changed, tmp_path / "b")
+    # Each edit resumes from what the cache holds and must still equal a render from nothing: an insert on the ducked
+    # track, the kick alone (the Duck's key), and a fader.
+    edits = [lambda r: r["tracks"][1]["inserts"][1]["settings"].update(gain0_gain=-2.0),
+             lambda r: r["tracks"][0]["inserts"][0]["settings"].update(depth_db=24.0),
+             lambda r: r["tracks"][1].update(fader_db=-3.0)]
+    for index, edit in enumerate(edits):
+        changed = copy.deepcopy(RECIPE)
+        edit(changed)
+        assert master(tmp_path, changed, tmp_path / "a") == master(tmp_path, changed, tmp_path / f"fresh{index}")

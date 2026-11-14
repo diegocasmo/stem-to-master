@@ -20,4 +20,3 @@ def kicks(seconds, every_s=0.5, freq=55.0, level=0.5):
 
 def noise(seconds, channels=2, level=0.05, seed=0):
     return level * np.random.default_rng(seed).standard_normal((channels, int(seconds * RATE)))
-
