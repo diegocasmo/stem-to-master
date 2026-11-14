@@ -915,7 +915,7 @@ class Engineer:
                 node.record("kick.tail", "kept: deepest, short of target", {"kick_tail_db": after["kick_tail"]})
         # Weight: a bell at the kick's own low peak, kept if it lifts the low body against its 200-400 Hz.
         f, p = signal.welch(node.audio.astype(np.float64).sum(axis=0), self.rate, nperseg=16384)
-        band = (f >= 60) & (f <= 100)
+        band = (f >= 50) & (f <= 100)
         peak_hz = float(f[band][np.argmax(p[band])])
         low0, mud0 = node.band(45, 110), node.band(200, 400)
 
