@@ -390,8 +390,8 @@ class Engineer:
     CEILING = -1.3
     # Group loudness against the guitars over the full-band frames (LU).
     TARGETS_LU = {"kick": -4.0, "snare": -4.0, "bass": -3.0, "cymbals": -9.0, "room": -13.0, "synths": -7.0}
-    # Genre rules, the same for every song: hit prominence in the mix (dB) the faders aim for, the kick's low decay,
-    # the low-mid build-up and the air tilt that trigger a move, and the master's limits on punch loss.
+    # Genre rules, the same for every song: the kick's low prominence under which the bass and guitars duck, the
+    # kick's low decay, the low-mid build-up and the air tilt that trigger a move, and the master's limits on punch loss.
     KICK_LOW_PROMINENCE = 12.5
     # Punch is a range, not a point: the master's kick and snare must sit within the officials' span by this measure
     # (kick 9.4-10.6 dB, snare 10.1-12.9 dB). Inside it the faders stay at the static balance, so the moves in front of
@@ -411,8 +411,8 @@ class Engineer:
     SUB_SOURCE_DB = -4.0
     SUB_CUT_DEPTH_DB = 4.0
     CREST_LOSS_DB = 3.0
-    # Export gates: the master's kick and snare must still stand out (the tuning songs' officials: kick 9.4-10.6 dB,
-    # snare 10.1-12.9 dB by this measure).
+    # Export gates: the master's kick and snare must still stand out, a little under MASTER_KICK_RANGE and
+    # MASTER_SNARE_RANGE.
     KICK_GATE_DB = 8.5
     SNARE_GATE_DB = 9.0
     MIN_SIDE_MID_DB = -12.0
