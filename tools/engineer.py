@@ -406,8 +406,9 @@ class Engineer:
         self.profile_name = "instrumental-prog-metal"
         profile = json.loads((daw.ROOT / "profiles" / self.profile_name / "profile.json").read_text())
         self.TARGET_LUFS = float(profile["master_integrated_lufs"])
-        # Down to 2 LU under the release target, -9 LUFS for -7: the research found -9 defensible for this genre.
-        self.LOUDNESS_STEPS = tuple(self.TARGET_LUFS - 0.5 * i for i in range(5))
+        # From the release target down to the profile's floor in 0.5 LU steps (-7 to -9: the research found -9 defensible).
+        self.MIN_LUFS = float(profile.get("master_min_integrated_lufs", self.TARGET_LUFS))
+        self.LOUDNESS_STEPS = tuple(self.TARGET_LUFS - 0.5 * i for i in range(int(round((self.TARGET_LUFS - self.MIN_LUFS) / 0.5)) + 1))
         self.found, self.left_out = stemlib.classify(self.song / "stems")
         self.rate = soundfile.info(self.song / "stems" / self.found[0]["stem"]).samplerate
         self.recipe = self.skeleton()
@@ -1190,7 +1191,8 @@ class Engineer:
         """A broad tonal balance: band `upper` against band `lower` over the full-band frames. When it is off the genre
         rule by more than 1 dB in `direction`, the source that owns the moved band gets a broad filter, the smallest that
         reaches the rule; what one source cannot do, the mix bus does, up to 3 dB."""
-        moved = upper if direction > 0 or move == "sub.cut" else lower
+        # The owner is the source with most of the band that sets the balance (2-4 kHz for presence), in both directions.
+        moved = upper
 
         def measure(audio):
             spec = meters.spectrum(audio[:, self.dense], self.rate)
@@ -1374,11 +1376,15 @@ class Engineer:
         punch = punch_of(written, self.rate, kick_s, snare_s)
         spec = written[:, self.dense].astype(np.float64)
         side_mid = meters.side_mid_db(meters.filtered(spec, self.rate, 500, 8000))
+        profile_target = self.LOUDNESS_STEPS[0]
         self.TARGET_LUFS = self.recipe["master"].get("target_lufs", self.TARGET_LUFS)
         checks = {"master_lufs": r2(level), "master_true_peak_dbtp": r2(peak), "target_lufs": self.TARGET_LUFS,
-                  "release_default_lufs": self.LOUDNESS_STEPS[0],
+                  "profile_target_lufs": profile_target, "profile_floor_lufs": self.MIN_LUFS,
+                  "at_profile_target": bool(abs(level - profile_target) <= 0.05),
                   "crest_loss_db": loss, "punch_db": punch, "side_mid_500_8k_db": r2(side_mid)}
-        gates = {"loudness": abs(level - self.TARGET_LUFS) <= 0.05, "true_peak": peak <= self.TARGET_TP,
+        # Loudness passes at the profile's target or at a step down to its floor; at_profile_target says which.
+        gates = {"loudness": abs(level - self.TARGET_LUFS) <= 0.05 and self.MIN_LUFS - 0.05 <= level <= profile_target + 0.05,
+                 "true_peak": peak <= self.TARGET_TP,
                  "crest_loss": max(loss.values(), default=0) <= self.CREST_LOSS_DB,
                  "kick_punch": punch.get("kick_low") is None or punch["kick_low"] >= self.KICK_GATE_DB,
                  "snare_punch": punch.get("snare_body") is None or punch["snare_body"] >= self.SNARE_GATE_DB,

@@ -2,6 +2,7 @@
   "sample_rate": 44100,
   "loud_parts": "3 s short-term windows within 3 LU of the loudest",
   "master_integrated_lufs": -7,
+  "master_min_integrated_lufs": -9,
   "references": [
     {
       "file": "Intervals - mnemonic.flac",

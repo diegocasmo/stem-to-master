@@ -200,10 +200,14 @@ def grade(song, master_path=None):
         return db(np.percentile(frames_, 99.5)) - db(frames_.mean())
     crest_gap = r2(crest(ours) - crest(official))
     def judge(band_items, punch_items, width_items):
-        gates = {"bands": all(abs(v) <= TOL["band"] for v in band_items),
-                 "kick": all(abs(v) <= TOL["punch"] for k, v in punch_items if k.startswith("kick")),
-                 "snare": all(abs(v) <= TOL["punch"] for k, v in punch_items if k.startswith("snare")),
-                 "width": all(abs(v) <= TOL["width"] for v in width_items)}
+        def gate(values, tol):
+            # No value scored well enough means unmeasured (None), never a pass.
+            return all(abs(v) <= tol for v in values) if values else None
+
+        gates = {"bands": gate(band_items, TOL["band"]),
+                 "kick": gate([v for k, v in punch_items if k.startswith("kick")], TOL["punch"]),
+                 "snare": gate([v for k, v in punch_items if k.startswith("snare")], TOL["punch"]),
+                 "width": gate(width_items, TOL["width"])}
         excess = (sum(max(0, abs(v) - TOL["band"]) for v in band_items) + sum(max(0, abs(v) - TOL["punch"]) for _, v in punch_items)
                   + sum(max(0, abs(v) - TOL["width"]) for v in width_items))
         total = (sum(abs(v) for v in band_items) / TOL["band"] + sum(abs(v) for _, v in punch_items) / TOL["punch"]
@@ -226,17 +230,18 @@ def grade(song, master_path=None):
     return {"song": song.name, "scored_s_by_octave": scored, "align_lag_samples": lag, "match_gain_db": r2(gain_db),
             "bands": bands, "thirds": thirds, "low_thirds": low_thirds,
             "punch": punch, "punch_raw_ours_official_n": raw, "width": width, "side_mid_ours_official": width_abs, "side_level_diagnostic": side_level, "width_scored_s": width_scored,
-            "lowmid_160": lowmid, "crest": crest_gap, "gates": gates, "pass": all(gates.values()) and export_ok is not False,
+            "lowmid_160": lowmid, "crest": crest_gap, "gates": gates, "pass": all(v is True for v in gates.values()) and export_ok is not False,
+            "pass_measured": all(v is not False for v in gates.values()) and export_ok is not False,
             "excess": r2(excess), "total": r2(total), "low_confidence": low_confidence, "unmeasured": unmeasured,
             "graded_file": str(Path(path).name), "export_ok": export_ok,
-            "pass_strict": all(strict[0].values()) and export_ok is not False and not unmeasured, "excess_strict": r2(strict[1]), "total_strict": r2(strict[2])}
+            "pass_strict": all(v is True for v in strict[0].values()) and export_ok is not False and not unmeasured, "excess_strict": r2(strict[1]), "total_strict": r2(strict[2])}
 
 
 def line(g):
     b = " ".join(f"{k}:{v:+.1f}" if v is not None else f"{k}:-" for k, v in g["bands"].items())
     p = " ".join(f"{k}:{v:+.1f}" for k, v in g["punch"].items() if v is not None)
     w = " ".join(f"{k}:{v:+.1f}" if v is not None else f"{k}:-" for k, v in g["width"].items())
-    return (f"{g['song'][:24]:24s} pass={g['pass']!s:5s} excess={g['excess']:5.1f} total={g['total']:5.1f} "
+    return (f"{g['song'][:24]:24s} pass={g['pass']!s:5s} (measured-only {g['pass_measured']!s:5s}) excess={g['excess']:5.1f} total={g['total']:5.1f} "
             f"| strict pass={g['pass_strict']!s:5s} excess={g['excess_strict']:5.1f} low-confidence {g['low_confidence']} "
             f"unmeasured {g['unmeasured']} file {g['graded_file']} export_ok {g['export_ok']}\n"
             f"  bands {b}\n  scored_s {g['scored_s_by_octave']}\n  hi-thirds {g['thirds']}  lowmid160 {g['lowmid_160']}  crest {g['crest']}\n"
