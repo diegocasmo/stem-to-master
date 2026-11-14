@@ -1,0 +1,16 @@
+name: ci
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  test:
+    # Renders are checked on Apple Silicon, where the owner runs the pipeline.
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: jdx/mise-action@v5
+      - run: uv sync --locked
+      - run: uv run pytest
