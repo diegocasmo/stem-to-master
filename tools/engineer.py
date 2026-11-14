@@ -24,7 +24,7 @@ import soundfile
 import stems as stemlib
 
 HOLD_DB = 0.5
-# Drop D is the lowest note a 4-string bass tunes to by default (36.7 Hz); a lower note is a 5-string or a low tuning.
+# Drop D (36.7 Hz) is the lowest common 4-string tuning; a lower note means a 5-string or a down-tuned bass.
 SUB_NOTE_HZ = 35.0
 # The standard low E (41.2 Hz): with notes under drop D, the bass gives up the fundamentals under it.
 SUB_HPF_HZ = 41.0
@@ -249,17 +249,18 @@ def decide_bass(node, dense):
     if typical < SUB_NOTE_HZ:
         # A part that mostly plays under drop D puts its fundamentals in the sub, where few speakers play them and they
         # cost the limiter headroom: the high-pass sits at SUB_HPF_HZ and the second harmonic carries those notes. A
-        # part that only dips there keeps its fundamentals (000's full song does, and its official keeps the sub).
+        # part that only dips there keeps its fundamentals.
         cands, judge, numbers = steep_hpf(node, "bass.hpf", [SUB_HPF_HZ], (15, SUB_NOTE_HZ), (typical * 1.9, typical * 3.2),
                                           order="24 dB/oct", fall_db=1, hold_db=1.0)
         needed = True
+        numbers |= {"lowest_f0_hz": r2(lowest), "median_f0_hz": r2(typical)}
     else:
         cands, judge, numbers = steep_hpf(node, "bass.hpf", [round(lowest * 0.7, 1)], (15, lowest * 0.7), (lowest * 0.95, lowest * 1.6),
                                           order="24 dB/oct", fall_db=1, hold_db=1.0)
         needed = below > fund - 10
-    node.attempt("bass.hpf", needed, numbers | {"lowest_f0_hz": r2(lowest), "median_f0_hz": r2(typical), "fundamental_db": r2(fund)},
-                 cands, judge)
-    # bass.rides and bass.compress read note levels in the dense passage.
+        numbers |= {"lowest_f0_hz": r2(lowest), "median_f0_hz": r2(typical), "fundamental_db": r2(fund)}
+    node.attempt("bass.hpf", needed, numbers, cands, judge)
+    # bass.rides and bass.compress read note levels over `dense` (the whole song, as decide_track passes it).
     start, end = dense
     levels = np.array([n["level_db"] for n in found if "level_db" in n and start * rate <= n["start"] < end * rate])
     spread = float(np.percentile(levels, 90) - np.percentile(levels, 10)) if len(levels) > 4 else 0.0
@@ -330,8 +331,8 @@ def decide_track(args):
     elif cls == "snare":
         node.hits = meters.detect_hits(audio, rate)
         below, body = node.band(20, 80), node.band(150, 250)
-        cands, judge, numbers = steep_hpf(node, "snare.hpf-lpf", [80], (20, 80), (150, 250), order="12 dB/oct")
-        node.attempt("snare.hpf-lpf", below > body - 20, numbers | {"body_db": r2(body)}, cands, judge)
+        cands, judge, numbers = steep_hpf(node, "snare.hpf", [80], (20, 80), (150, 250), order="12 dB/oct")
+        node.attempt("snare.hpf", below > body - 20, numbers | {"body_db": r2(body)}, cands, judge)
     elif cls == "overheads":
         low, cym = node.band(20, 250), node.band(2000, 8000)
         cands, judge, numbers = steep_hpf(node, "overheads.hpf", [150, 220], (20, 150), (2000, 8000), order="12 dB/oct", fall_db=3)
@@ -788,7 +789,7 @@ class Engineer:
             if best:
                 for t, f in zip(mics, best[0]):
                     t["fader_db"] = -60.0 if f is None else f
-            self.log("kick.blend", "kick", "kept" if best and any(best[0][1:]) else "dropped: all at 0 is best",
+            self.log("kick.blend", "kick", "kept" if best and any(f != 0 for f in best[0][1:]) else "dropped: all at 0 is best",
                      {"mics": [t["name"] for t in mics], "chosen": best[0] if best else None, "tried": tried})
         self.match_samples(mixer, "kick")
 
@@ -812,7 +813,7 @@ class Engineer:
             if best:
                 for t, f in zip(mics, best[0]):
                     t["fader_db"] = -60.0 if f is None else f
-            self.log("snare.blend", "snare", "kept" if best and any(best[0][1:]) else "dropped: all at 0 is best",
+            self.log("snare.blend", "snare", "kept" if best and any(f != 0 for f in best[0][1:]) else "dropped: all at 0 is best",
                      {"mics": [t["name"] for t in mics], "chosen": best[0] if best else None, "tried": tried})
         self.match_samples(mixer, "snare")
 
@@ -967,13 +968,15 @@ class Engineer:
                 if step == 0 and low <= found <= high:
                     break
             ups = [t for t in tried if t["step_db"] >= 0]
-            if ups[-1][key] - tried[0][key] < 1.0 and tried[0][key] < low:
+            stuck = ups[-1][key] - tried[0][key] < 1.0 and tried[0][key] < low
+            if stuck:
                 reach = tried[0]
             else:
                 reach = min(tried, key=lambda t: (max(low - t[key], 0.0, t[key] - high), abs(t["step_db"])))
             chosen = start + reach["step_db"]
             self.bus(name)["fader_db"] = round(chosen, 2)
-            self.log("balance.punch", name, "kept" if reach["step_db"] else "dropped: in range",
+            outcome = "dropped: in range" if low <= reach[key] <= high else "dropped: the fader cannot reach the range"
+            self.log("balance.punch", name, "kept" if reach["step_db"] else outcome,
                      {"range_db": [r2(low), r2(high)], "tried": tried, "fader_db": round(chosen, 2)})
 
     # ---------- stage 5: context moves on the full mix ----------
@@ -1210,7 +1213,7 @@ class Engineer:
             chug_before = third_levels(self.leaf_out(mixer, owner), self.rate, [keep], self.dense)[keep]
             chug_after = third_levels(daw.pan_gain(out, bus["fader_db"], bus["pan"]), self.rate, [keep], self.dense)[keep]
             ok = b < build - 0.5 and chug_before - chug_after <= 1.5
-            tried.append({"gain_db": gain, "buildup_db": r2(b), "owner_100hz_change": r2(chug_after - chug_before), "ok": ok})
+            tried.append({"gain_db": gain, "buildup_db": r2(b), "owner_keep_change": r2(chug_after - chug_before), "ok": ok})
             if ok:
                 kept = insert
                 if b <= self.LOWMID_BUILDUP_DB:
@@ -1290,7 +1293,9 @@ class Engineer:
             if ok:
                 kept = insert
         self.bus("drums")["inserts"] = [kept] if kept else []
-        self.log("drum-bus.glue", "drums", "kept" if kept else "dropped: punch did not hold", {"before": base, "tried": tried})
+        held = any(all(t[k] >= base[k] - 0.5 for k in ("kick_low", "snare_body", "snare_crack") if base.get(k) is not None) for t in tried)
+        why = "dropped: loudness drop outside 0.5-4 dB" if held else "dropped: punch did not hold"
+        self.log("drum-bus.glue", "drums", "kept" if kept else why, {"before": base, "tried": tried})
 
     def rebalance_stage(self, pool):
         """Downstream re-decided once after the upstream changes. The punch that counts is the master's: a trial

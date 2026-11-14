@@ -1,5 +1,5 @@
 # The exact plugins the pipeline loads. ./setup.sh installs them into plugins/ and stops on any hash mismatch.
-# sha256 is the downloaded file; bundle_sha256 is the installed .vst3 (tools/prepared.py bundle_hash).
+# sha256 is the downloaded file; bundle_sha256 is the installed .vst3 (tools/plugins.py bundle_hash).
 
 [[plugin]]
 name = "ZL Equalizer 2"

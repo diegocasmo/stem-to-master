@@ -6,7 +6,6 @@ import subprocess
 import pytest
 
 import plugins
-from prepared import bundle_hash
 
 ENTRY = {"name": "Fake", "version": "1", "url": "https://example.invalid/Fake.dmg", "sha256": "0" * 64,
          "bundle_sha256": "1" * 64}
@@ -47,7 +46,7 @@ def test_a_bundle_in_a_pkg_in_a_zip_named_like_a_script_installs(tmp_path, monke
                     "/Library/Audio/Plug-Ins/VST3/Fake.vst3", pkg], check=True, capture_output=True)
     archive = tmp_path / "Fakedl.php"
     subprocess.run(["ditto", "-c", "-k", pkg, archive], check=True)
-    entry = dict(ENTRY, sha256=hashlib.sha256(archive.read_bytes()).hexdigest(), bundle_sha256=bundle_hash(root))
+    entry = dict(ENTRY, sha256=hashlib.sha256(archive.read_bytes()).hexdigest(), bundle_sha256=plugins.bundle_hash(root))
     monkeypatch.setattr(plugins, "PLUGINS", tmp_path / "plugins")
     monkeypatch.setattr(plugins.urllib.request, "urlopen", lambda *a, **k: io.BytesIO(archive.read_bytes()))
     assert plugins.install(entry) == "installed"

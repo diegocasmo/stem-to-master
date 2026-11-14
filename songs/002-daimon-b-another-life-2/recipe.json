@@ -761,7 +761,7 @@
    }
   },
   {
-   "move": "snare.hpf-lpf",
+   "move": "snare.hpf",
    "target": "03_SnareUp",
    "outcome": "dropped: not needed",
    "numbers": {
@@ -771,7 +771,7 @@
    }
   },
   {
-   "move": "snare.hpf-lpf",
+   "move": "snare.hpf",
    "target": "04_SnareDown",
    "outcome": "dropped: not needed",
    "numbers": {
@@ -781,7 +781,7 @@
    }
   },
   {
-   "move": "snare.hpf-lpf",
+   "move": "snare.hpf",
    "target": "05_SnareRing",
    "outcome": "dropped: not needed",
    "numbers": {
@@ -2184,7 +2184,7 @@
   {
    "move": "balance.punch",
    "target": "kick",
-   "outcome": "dropped: in range",
+   "outcome": "dropped: the fader cannot reach the range",
    "numbers": {
     "range_db": [
      9.67,
