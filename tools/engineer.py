@@ -406,7 +406,8 @@ class Engineer:
         self.profile_name = "instrumental-prog-metal"
         profile = json.loads((daw.ROOT / "profiles" / self.profile_name / "profile.json").read_text())
         self.TARGET_LUFS = float(profile["master_integrated_lufs"])
-        self.LOUDNESS_STEPS = (self.TARGET_LUFS, self.TARGET_LUFS - 0.5, self.TARGET_LUFS - 1.0)
+        # Down to 2 LU under the release target, -9 LUFS for -7: the research found -9 defensible for this genre.
+        self.LOUDNESS_STEPS = tuple(self.TARGET_LUFS - 0.5 * i for i in range(5))
         self.found, self.left_out = stemlib.classify(self.song / "stems")
         self.rate = soundfile.info(self.song / "stems" / self.found[0]["stem"]).samplerate
         self.recipe = self.skeleton()
@@ -1336,7 +1337,7 @@ class Engineer:
 
     def master_stage(self, pool):
         """The profile's loudness is accepted only if kick and snare lose at most 3 dB of punch; otherwise the release
-        loudness steps down by 0.5 LU (1 LU at most) and the quietest step is kept with its gate failing if none passes."""
+        loudness steps down by 0.5 LU (2 LU at most) and the quietest step is kept with its gate failing if none passes."""
         mixer = self.rendered(pool)
         tried_all, chosen = [], None
         for target in self.LOUDNESS_STEPS:
