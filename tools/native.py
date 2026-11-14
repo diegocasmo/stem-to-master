@@ -149,3 +149,27 @@ def duck(audio, rate, settings, context):
     over = np.maximum(0, level_db - settings["threshold_db"]) * (1 - 1 / settings["ratio"])
     gain = 10 ** (-np.minimum(settings["range_db"], over) / 20)
     return apply_gain(audio, rate, gain, settings.get("band_hz"))
+
+
+SHAPE_FIELDS = {"band_hz", "hold_ms", "fade_ms", "depth_db", "floor_db"}
+
+
+def shape(audio, rate, settings, context):
+    """Shortens each hit's tail in a band: full level for hold_ms after a hit, then down by depth_db over fade_ms,
+    back up in the 3 ms before the next hit. Hits are found on the band itself, so the shape follows the playing."""
+    import hits as hitlib
+
+    low = band(audio, rate, settings["band_hz"])
+    times = hitlib.detect((low**2).sum(axis=1), rate, settings.get("floor_db", 30)) / rate
+    t = np.arange(len(audio)) / rate
+    depth = settings["depth_db"]
+    if len(times) == 0:
+        return audio
+    last = np.searchsorted(times, t, side="right") - 1
+    since = np.where(last >= 0, t - times[np.maximum(last, 0)], np.inf)
+    following = np.minimum(last + 1, len(times) - 1)
+    until = np.where(last + 1 < len(times), times[following] - t, np.inf)
+    decay = -depth * np.clip((since - settings["hold_ms"] / 1000) / (settings["fade_ms"] / 1000), 0, 1)
+    recover = -depth * np.clip(until / 0.003, 0, 1)
+    gain_db = np.maximum(decay, recover)
+    return apply_gain(audio, rate, 10 ** (gain_db / 20), settings["band_hz"])

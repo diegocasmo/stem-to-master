@@ -24,7 +24,7 @@ ROOT = Path(__file__).resolve().parents[1]
 PLUGINS = ROOT / "plugins"
 LIBC = ctypes.CDLL(None)
 RAND_SEED = 1
-NATIVE = {"Ride", "Duck"}
+NATIVE = {"Ride", "Duck", "Shape"}
 TOOLS = Path(__file__).resolve().parent
 
 
@@ -34,7 +34,7 @@ def digest(*parts):
 
 
 def _code_tag():
-    files = [[name, hashlib.sha256((TOOLS / name).read_bytes()).hexdigest()] for name in ("daw.py", "native.py", "airwindows.py")]
+    files = [[name, hashlib.sha256((TOOLS / name).read_bytes()).hexdigest()] for name in ("daw.py", "native.py", "airwindows.py", "hits.py")]
     # Cached files outlive this process, so the libraries and OS build that computed them are part of every key.
     libs = [metadata.version(name) for name in ("numpy", "scipy", "pedalboard", "numba", "soundfile")]
     return digest(files, libs, sys.version, platform.platform(), os.uname().version)
@@ -147,7 +147,7 @@ def apply(audio, rate, insert, keys, sections=None):
     plugin, settings = insert["plugin"], insert["settings"]
     if plugin in NATIVE:
         context = _Context(keys, sections or {})
-        out = (native.ride if plugin == "Ride" else native.duck)(audio.T.astype(np.float64), rate, settings, context)
+        out = {"Ride": native.ride, "Duck": native.duck, "Shape": native.shape}[plugin](audio.T.astype(np.float64), rate, settings, context)
         return np.ascontiguousarray(out.T, dtype=np.float32)
     instance = load(plugin, settings)
     mono = audio.shape[0] == 1 and isinstance(instance, pedalboard.VST3Plugin)

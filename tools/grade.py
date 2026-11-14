@@ -96,12 +96,20 @@ def vocal_mask(song, notes, rate, length, frames):
 def grade(song, master_path=None):
     song = Path(song)
     notes = json.loads((song / "notes.json").read_text())
-    ours, rate = soundfile.read(master_path or song / "renders" / "master.wav", always_2d=True, dtype="float64")
+    path = master_path or song / "renders" / "master.wav"
+    if not Path(path).exists():
+        path = song / "renders" / "master-failed-gates.wav"
+    ours, rate = soundfile.read(path, always_2d=True, dtype="float64")
     official, orate = soundfile.read(song / "official.wav", always_2d=True, dtype="float64")
     assert rate == orate
     length = min(len(ours), len(official))
     ours, official = ours[:length].T, official[:length].T
-    lag = align(ours, official, rate)
+    # Aligned to the raw stems, not to our master, so the official's numbers never move with our mix.
+    stems_sum = np.zeros(length)
+    for stem in sorted((song / "stems").glob("*.wav")):
+        x = soundfile.read(stem, always_2d=True, dtype="float64")[0]
+        stems_sum[: len(x)] += x.mean(axis=1)[:length]
+    lag = align(stems_sum[None], official, rate, reach_s=0.02)
     # official[t + lag] matches ours[t]: shift the official onto our clock.
     official = np.roll(official, -lag, axis=1)
     co, freqs, zo = cells(ours, rate)
