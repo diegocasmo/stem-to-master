@@ -40,3 +40,11 @@ license = "Venn Audio freeware"
 url = "https://www.vennaudio.com/downloads/Free%20Suite/Free%20Suite_MacOS_1.5.7_Release.dmg"
 sha256 = "3806736065e905dc12a7da40873b02069106fad89d12c0836eadf2b4748ce21a"
 bundle_sha256 = "fef267b9a4ccdf6203583a7c5cbef052bb6efe4a99c4c857d107974f4b286d18"
+
+[[plugin]]
+name = "ZamCompX2"
+version = "4.5"
+license = "GPL-2.0"
+url = "https://github.com/zamaudio/zam-plugins/releases/download/4.5/zam-plugins-4.5-macos-universal.dmg"
+sha256 = "ac163eb25781b08936b80c12e809777e3aaa523887d0355504f2e6586c4e43cf"
+bundle_sha256 = "39efed5da9ae006b677ffdabbf8424bfd9f3950ec7176c790caa68290a28de54"

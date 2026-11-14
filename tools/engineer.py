@@ -298,7 +298,8 @@ def decide_bass(node, dense):
         return after < before - HOLD_DB, {"note_spread_db": r2(after)}
 
     node.attempt("bass.compress", spread > 3, {"note_spread_db": r2(before), "note_level_p50_db": r2(level)},
-                 [{"plugin": ZL_COMP, "settings": zl_comp(level - 8, 4, 3, 60)}], judge)
+                 [{"plugin": "ZamCompX2", "settings": {"threshold_db": float(round(level - 8, 1)), "ratio": 4.0, "attack_ms": 3.0,
+                                                       "release_ms": 60.0, "knee_db": 6.0, "makeup_db": 0.0}}], judge)
 
 
 def decide_guitar(node):
