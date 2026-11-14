@@ -2,8 +2,8 @@
  "source_stems": "DaimonB_AnotherLife2_Full",
  "official": "AnotherLife2_Full_Preview.mp3",
  "window_s": [
-  122.0,
-  152.0
+  5.0,
+  35.0
  ],
  "official_offset_samples": -213411,
  "official_offset_s": -4.8393,
@@ -32,8 +32,11 @@
  "excluded_di": [],
  "silent_in_window": [
   "06_Tom1.wav",
-  "08_HiHat.wav",
-  "19_Synth5.wav"
+  "07_Tom2.wav",
+  "14_Bass2.wav",
+  "18_Synth4.wav",
+  "19_Synth5.wav",
+  "20_Synth6.wav"
  ],
  "stems": [
   "01_KickIn.wav",
@@ -41,28 +44,46 @@
   "03_SnareUp.wav",
   "04_SnareDown.wav",
   "05_SnareRing.wav",
-  "07_Tom2.wav",
+  "08_HiHat.wav",
   "09_Ride.wav",
   "10_Overheads.wav",
   "11_Drum Room.wav",
   "12_SFX.wav",
   "13_Bass1.wav",
-  "14_Bass2.wav",
   "15_Synth1.wav",
   "16_Synth2.wav",
   "17_Synth3.wav",
-  "18_Synth4.wav",
-  "20_Synth6.wav",
   "21_ElecGtr.wav",
   "22_ElecGtrDT.wav"
  ],
  "core": {
-  "02_KickOut.wav": 1.0,
-  "13_Bass1.wav": 1.0,
+  "02_KickOut.wav": 0.91,
+  "13_Bass1.wav": 0.72,
   "21_ElecGtr.wav": 1.0
  },
- "full_band_fraction": 1.0,
- "graded_spans_s": [],
- "graded_s": 0.0,
+ "full_band_fraction": 0.68,
+ "graded_spans_s": [
+  [
+   8.5,
+   10.4
+  ],
+  [
+   10.7,
+   12.9
+  ],
+  [
+   13.1,
+   15.3
+  ],
+  [
+   15.6,
+   17.8
+  ],
+  [
+   18.0,
+   30.0
+  ]
+ ],
+ "graded_s": 20.5,
  "why_graded_spans": "no 45 s of the song has every vocal stem silent; the grader scores only the spans where all vocal stems are silent (with 1.5 s margin) and kick, bass and the main guitar play"
 }
