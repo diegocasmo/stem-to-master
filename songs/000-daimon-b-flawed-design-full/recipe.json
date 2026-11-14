@@ -1380,6 +1380,7 @@
     "below_db": -82.58,
     "keep_db": -55.04,
     "lowest_f0_hz": 27.48,
+    "median_f0_hz": 41.25,
     "fundamental_db": -71.85,
     "tried": [
      {
@@ -2714,7 +2715,8 @@
    "outcome": "dropped: not needed",
    "numbers": {
     "sub_tilt_db": -5.63,
-    "rule_db": -4.0
+    "rule_db": -4.0,
+    "plays_under_drop_d": false
    }
   },
   {
@@ -2723,7 +2725,8 @@
    "outcome": "dropped: not needed",
    "numbers": {
     "sub_tilt_db": -19.29,
-    "rule_db": -4.0
+    "rule_db": -4.0,
+    "plays_under_drop_d": false
    }
   },
   {
