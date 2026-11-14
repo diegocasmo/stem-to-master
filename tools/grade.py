@@ -14,7 +14,7 @@ import pyloudnorm
 import soundfile
 from scipy import signal
 
-from punch import bandpass, db, drum_hits, env, prominence, tail
+from punch import ENV_S, bandpass, db, drum_hits, env, prominence, tail
 
 OCTAVES = [31.5, 63, 125, 250, 500, 1000, 2000, 4000, 8000, 16000]
 THIRDS = [10000, 12500]
@@ -22,6 +22,9 @@ WIDTH_BANDS = [(120, 500), (500, 2000), (2000, 8000)]
 MIN_SCORED_S = 8.0
 MIN_HITS = 15
 TOL = {"band": 2.0, "punch": 1.5, "width": 1.5}
+# A hit is scored when the raw vocals sit this far under the raw instruments in its band, in the windows around it that prominence
+# divides by. At 10 dB the vocal can lift the official's level around a hit by at most 0.4 dB, under a third of the tolerance.
+HIT_VOCAL_DB = 10.0
 HISTORY = Path.home() / "stemmaster-scratch" / "night" / "grades.jsonl"
 
 
@@ -38,6 +41,14 @@ def stem_hits(song, chain, rate, length):
             x = soundfile.read(path, always_2d=True, dtype="float64")[0]
             total[: len(x)] += x.mean(axis=1)[:length]
     return drum_hits(total, rate, chain)
+
+
+def summed_mono(files, length):
+    total = np.zeros(length)
+    for path in files:
+        x = soundfile.read(path, always_2d=True, dtype="float64")[0]
+        total[: len(x)] += x.mean(axis=1)[:length]
+    return total
 
 
 def align(ours, official, rate, reach_s=0.05):
@@ -167,14 +178,23 @@ def grade(song, master_path=None):
         width_abs[key] = [r2(ours_ratio), r2(off_ratio)]
         side_level[key] = r2(db(so[rows][m].sum()) - db(sf[rows][m].sum()))
 
+    vocal_files = sorted((song / "vocals").glob("*.wav")) if (song / "vocals").exists() else []
+    vocals = summed_mono(vocal_files, length) if vocal_files else None
+    spans = notes.get("graded_spans_s", [[0, length / rate]])
+
     def scored_hits(times, lo, hi):
-        rows = (centers * 2 ** (1 / 6) > lo) & (centers / 2 ** (1 / 6) < hi)
-        ok = mask[rows].all(axis=0)
-        t = np.arange(frames) * HOP_S + NFFT / rate / 2
+        """Hits away from the edges; with vocals, only those the raw vocals leave clear in this band. The 0.1 s cells
+        of the band mask are too coarse here: a sung line covers nearly every snare hit in some cell."""
+        times = np.array([h for h in times if 0.2 < h < length / rate - 0.2])
+        if vocals is None:
+            return np.array([h for h in times if any(a <= h - 0.13 and h + 0.15 <= b for a, b in spans)])
+        ei, ev = env(bandpass(stems_sum[None], rate, lo, hi), rate), env(bandpass(vocals[None], rate, lo, hi), rate)
+        t = (np.arange(len(ei)) + 0.5) * ENV_S
         keep = []
         for h in times:
-            near = np.abs(t - h) <= 0.2
-            if near.any() and ok[near].all() and 0.2 < h < length / rate - 0.2:
+            # The windows either side of the hit, where a vocal would raise the level prominence divides by.
+            near = ((t >= h - 0.13) & (t < h - 0.05)) | ((t >= h + 0.07) & (t < h + 0.15))
+            if db(ei[near].sum()) - db(ev[near].sum()) >= HIT_VOCAL_DB:
                 keep.append(h)
         return np.array(keep)
 
