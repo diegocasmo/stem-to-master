@@ -4,7 +4,7 @@ import math
 import numpy as np
 from scipy import signal
 
-ENV_S = 220 / 44100
+ENV_S = 220 / 44100  # 5 ms frames; exact at 44.1 kHz, the rate of every song here
 
 
 def db(x):

@@ -370,7 +370,7 @@ def third_levels(audio, rate, centers, inside=None):
 
 class Engineer:
     # The release choice (research decision 2): -7 LUFS integrated, true peak at most -1 dBTP.
-    TARGET_LUFS = -7.0
+    TARGET_LUFS = None  # read from the profile
     TARGET_TP = -1.0
     CEILING = -1.3
     # Group loudness against the guitars over the full-band frames (LU).
@@ -404,6 +404,9 @@ class Engineer:
         self.cache = daw.Cache(os.environ.get("S2M_CACHE") or self.song / "cache")
         self.workers = workers
         self.profile_name = "instrumental-prog-metal"
+        profile = json.loads((daw.ROOT / "profiles" / self.profile_name / "profile.json").read_text())
+        self.TARGET_LUFS = float(profile["master_integrated_lufs"])
+        self.LOUDNESS_STEPS = (self.TARGET_LUFS, self.TARGET_LUFS - 0.5, self.TARGET_LUFS - 1.0)
         self.found, self.left_out = stemlib.classify(self.song / "stems")
         self.rate = soundfile.info(self.song / "stems" / self.found[0]["stem"]).samplerate
         self.recipe = self.skeleton()
@@ -491,20 +494,29 @@ class Engineer:
             return self.leaf_out(mixer, name, faders), mixer.nodes[name][0]
 
         total = np.zeros((2, mixer.length))
-        drums, parts = np.zeros((2, mixer.length)), []
+        drums, parts, mix_parts = np.zeros((2, mixer.length)), [], []
         for name in self.leaves():
             audio, key = out(name)
             bus = self.bus(name)
+            fader = (faders or {}).get(name, bus["fader_db"])
             if bus["out"] == "drums":
                 drums += audio
-                parts.append([key, (faders or {}).get(name, bus["fader_db"]), None, bus["pan"]])
+                parts.append([key, fader, None, bus["pan"]])
             else:
                 total += audio
+                mix_parts.append([key, fader, bus["pan"]])
         if self.has("drums") and parts:
+            drums_key = daw.sum_key(parts)
             inserts = self.bus("drums")["inserts"]
             if inserts:
-                drums, _ = daw.chain(self.cache, self.rate, daw.sum_key(parts), lambda: drums.astype(np.float32), inserts)
+                drums, drums_key = daw.chain(self.cache, self.rate, drums_key, lambda: drums.astype(np.float32), inserts)
             total += daw.pan_gain(drums, self.bus("drums")["fader_db"], 0)
+            mix_parts.append([drums_key, self.bus("drums")["fader_db"], 0])
+        inserts = self.recipe["mix"]["inserts"]
+        if inserts:
+            # The mix bus as the render runs it. The sum order differs from the mixer's, so it is cached under its
+            # own key and never stands in for a rendered mix.
+            total, _ = daw.chain(self.cache, self.rate, daw.digest("decision-mix", mix_parts), lambda: total.astype(np.float32), inserts)
         return total
 
     def loud(self, audio, inside=None):
@@ -552,6 +564,7 @@ class Engineer:
                 used |= {a, b}
         for a, b in pairs:
             self.track(a)["pan"], self.track(b)["pan"] = -1.0, 1.0
+        self.guitar_pair_names = pairs
         self.log("guitars.pan", "gtr", "kept", {"pairs": pairs, "envelope_correlation": {f"{a}+{b}": r2(v) for (a, b), v in scores.items()},
                                                 "centred": [t["name"] for t in mono if t["name"] not in used]})
 
@@ -708,6 +721,8 @@ class Engineer:
             tried.append({"faders": list(faders), **numbers, "ok": ok})
             return ok, value
 
+        # The first mic alone is scored first, so the score's guard compares every blend against that mic.
+        run([0.0] + [None] * (len(mics) - 1))
         if len(mics) <= 3:
             combos = [[0.0] + list(c) for c in itertools.product(steps, repeat=len(mics) - 1)]
             best = None
@@ -717,7 +732,6 @@ class Engineer:
                     best = (faders, value)
             return best, tried
         faders = [0.0] + [None] * (len(mics) - 1)
-        run(faders)
         best = None
         for index in range(1, len(mics)):
             options = []
@@ -800,16 +814,12 @@ class Engineer:
             self.log("overheads.close-blend", t["name"], "kept", {"close_lufs": r2(c), "oh_lufs": r2(o), "fader_db": t["fader_db"]})
 
     def guitar_pairs(self, mixer):
-        for t in self.tracks_of("gtr"):
-            if t["pan"] != -1.0:
-                continue
-            partner = next((u for u in self.tracks_of("gtr") if u["pan"] == 1.0 and u is not t and
-                            abs(self.loud(mixer.node_audio(u["name"]), self.dense) - self.loud(mixer.node_audio(t["name"]), self.dense)) < 20), None)
-            if partner is None:
-                continue
-            l, r = self.loud(mixer.node_audio(t["name"]), self.dense), self.loud(mixer.node_audio(partner["name"]), self.dense)
-            t["fader_db"], partner["fader_db"] = round((r - l) / 2, 2), round((l - r) / 2, 2)
-            self.log("guitars.pair", f"{t['name']}+{partner['name']}", "kept", {"left_lufs": r2(l), "right_lufs": r2(r)})
+        """Each double-tracked pair found by pan_guitars plays at equal loudness, left against right."""
+        for a, b in getattr(self, "guitar_pair_names", []):
+            left, right = self.track(a), self.track(b)
+            l, r = self.loud(mixer.node_audio(a), self.dense), self.loud(mixer.node_audio(b), self.dense)
+            left["fader_db"], right["fader_db"] = round((r - l) / 2, 2), round((l - r) / 2, 2)
+            self.log("guitars.pair", f"{a}+{b}", "kept", {"left_lufs": r2(l), "right_lufs": r2(r)})
 
     def snare_ring(self, mixer):
         """snare.ring-cut: a narrow resonance 300-900 Hz standing 6 dB over its neighbourhood in the blended snare."""
@@ -853,7 +863,8 @@ class Engineer:
             if after["kick_tail"] <= before["kick_tail"] - 2:
                 node.inserts.append({"id": "kick.tail", **cands[-1]})
                 node.audio, node.key = out, k
-                node.record("kick.tail", "kept: deepest, short of target", {"kick_tail_db": after["kick_tail"]})
+                node.decisions[-1]["outcome"] = "kept: deepest, short of target"
+                node.decisions[-1]["numbers"]["kept_kick_tail_db"] = after["kick_tail"]
         # Weight: a bell at the kick's own low peak, kept if it lifts the low body against its 200-400 Hz.
         f, p = signal.welch(node.audio.astype(np.float64).sum(axis=0), self.rate, nperseg=16384)
         band = (f >= 50) & (f <= 100)
@@ -948,8 +959,11 @@ class Engineer:
         self.duck_bass(self.rendered(pool))
         self.lowmid_owner(self.rendered(pool))
         self.source_sub(self.rendered(pool))
-        self.tilt(self.rendered(pool), "presence", (2000, 4000), (125, 250), self.PRESENCE_TILT_DB, 1,
-                  lambda g: {"plugin": "PeakFilter", "settings": {"cutoff_frequency_hz": 3000.0, "gain_db": g, "q": 0.7}}, (1.5, 3.0, 4.5, 6.0))
+        # Presence both ways: the four officials sit within 1.5 dB of each other here (masked -2.3, -3.0, -3.8, -2.4),
+        # across three bands and engineers, so dull or harsh guitars against their own low-mids are a fault.
+        presence = lambda g: {"plugin": "PeakFilter", "settings": {"cutoff_frequency_hz": 3000.0, "gain_db": g, "q": 0.7}}
+        self.tilt(self.rendered(pool), "presence", (2000, 4000), (125, 250), self.PRESENCE_TILT_DB, 1, presence, (1.5, 3.0, 4.5, 6.0))
+        self.tilt(self.rendered(pool), "presence", (2000, 4000), (125, 250), self.PRESENCE_TILT_DB, -1, presence, (-1.5, -3.0, -4.5))
         # Air and top follow the cymbals as recorded: a bright cymbal source is left bright, a dull one gets lifted.
         shift = -self.CYMBAL_AIR_SLOPE * (self.cymbal_air(self.rendered(pool)) - self.CYMBAL_AIR_REF_DB)
         self.tilt(self.rendered(pool), "air", (8000, 16000), (1000, 4000), self.AIR_TILT_DB + shift, 1,
@@ -978,21 +992,29 @@ class Engineer:
             if t0 <= self.SUB_SOURCE_DB:
                 self.log("sub.cut", name, "dropped: not needed", numbers)
                 continue
-            tried, kept = [], None
+            keep0 = meters.band_db(meters.spectrum(audio[:, self.dense], self.rate), 60, 100)
+            tried, kept, last = [], None, t0
             for gain in (-2.0, -4.0, -6.0, -8.0, -10.0):
                 insert = {"id": "sub.cut", "plugin": "LowShelfFilter", "settings": {"cutoff_frequency_hz": 45.0, "gain_db": gain, "q": 0.707}}
                 out, key = daw.chain(self.cache, self.rate, mixer.nodes[name][0], lambda: audio, [insert])
                 t = tilt(out)
-                tried.append({"gain_db": gain, "sub_tilt_db": r2(t)})
-                kept = insert
+                keep = meters.band_db(meters.spectrum(out[:, self.dense], self.rate), 60, 100)
+                # Each deeper step must still move the sub, and the source's 60-100 Hz body must hold within 1 dB.
+                ok = last - t >= 0.5 and keep0 - keep <= 1.0
+                tried.append({"gain_db": gain, "sub_tilt_db": r2(t), "body_change_db": r2(keep - keep0), "ok": ok})
+                if not ok:
+                    break
+                kept, last = insert, t
                 if t <= self.SUB_SOURCE_DB - self.SUB_CUT_DEPTH_DB:
                     break
-            self.bus(name)["inserts"].append(kept)
-            self.log("sub.cut", name, "kept", numbers | {"tried": tried})
+            if kept:
+                self.bus(name)["inserts"].append(kept)
+            self.log("sub.cut", name, "kept" if kept else "dropped: did not work", numbers | {"tried": tried})
 
     def lead_space(self, pool):
         """A guitar that plays in the middle through the song (a melody or lead, no double) gets a stereo plate on a
-        send, the smallest that widens the 500 Hz-2 kHz side by 1.5 dB without lifting that band by more than 1 dB."""
+        send: the smallest that widens the 500 Hz-2 kHz side/mid by 1.5 dB, else the largest that widens it by 0.5 dB,
+        without lifting that band by more than 1 dB."""
         mixer = self.rendered(pool)
         centred = []
         for t in self.tracks_of("gtr"):
@@ -1204,7 +1226,7 @@ class Engineer:
                 replaced[owner] = kept_audio
             self.log(move, owner, "kept" if kept else "dropped: did not work", numbers | {"tried": tried})
         rest = (target - reached) * direction
-        if rest > 1.0 and move != "sub.cut":
+        if rest > 1.0:
             gain = round(float(min(3.0, rest)) * direction, 2)
             insert = make(gain)
             self.recipe["mix"]["inserts"].append({"id": f"mix-bus.{move}", **insert})
@@ -1293,7 +1315,7 @@ class Engineer:
         return {k: r2(a[k] - b[k]) for k in ("kick_low", "kick_click", "snare_body", "snare_crack") if a.get(k) is not None and b.get(k) is not None}
 
     def master_select(self, mixer, mix):
-        """The master chain at the release loudness that loses the least punch: a clipper at -3 or -5 dBFS after the
+        """The master chain at the release loudness that loses the least punch: a clipper at -2 or -3 dBFS after the
         drive, then the limiter. Returns (chain, crest loss, master punch) or None."""
         mix_key = mixer.nodes["mix"][0]
         kick_s, snare_s = self.drum_times(mixer)
@@ -1312,11 +1334,9 @@ class Engineer:
                 best = (worst, chain, loss, punch_of(out, self.rate, kick_s, snare_s))
         return best, tried
 
-    LOUDNESS_STEPS = (-7.0, -7.5, -8.0)
-
     def master_stage(self, pool):
-        """-7 LUFS is accepted only if kick and snare lose at most 3 dB of punch; otherwise the release loudness
-        steps down by 0.5 LU (to -8 at most) and the quietest step is kept with its gate failing if none passes."""
+        """The profile's loudness is accepted only if kick and snare lose at most 3 dB of punch; otherwise the release
+        loudness steps down by 0.5 LU (1 LU at most) and the quietest step is kept with its gate failing if none passes."""
         mixer = self.rendered(pool)
         tried_all, chosen = [], None
         for target in self.LOUDNESS_STEPS:

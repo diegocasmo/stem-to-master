@@ -90,6 +90,8 @@ def vocal_mask(song, notes, rate, length, frames):
 
     voice, _, _ = cells(summed(vocal_files), rate)
     band, _, _ = cells(summed(sorted((song / "stems").glob("*.wav"))), rate)
+    # No time margin for the official's vocal reverb and delays: a 0.3-1 s margin left 002 and 003 under 2 s scored
+    # in every octave above 250 Hz. The cost is a bias: those effects count as instruments (night decisions N10).
     return 10 * np.log10(voice + 1e-20) <= 10 * np.log10(band + 1e-20) - 15
 
 
@@ -100,6 +102,8 @@ def grade(song, master_path=None):
     if not Path(path).exists():
         path = song / "renders" / "master-failed-gates.wav"
     ours, rate = soundfile.read(path, always_2d=True, dtype="float64")
+    checks_file = song / "renders" / "checks.json"
+    export_ok = json.loads(checks_file.read_text()).get("export_ok") if master_path is None and checks_file.exists() else None
     official, orate = soundfile.read(song / "official.wav", always_2d=True, dtype="float64")
     assert rate == orate
     length = min(len(ours), len(official))
@@ -147,13 +151,21 @@ def grade(song, master_path=None):
     sf, _, _ = cells((official[0] - official[1]) / 2, rate)
     mo, _, _ = cells((ours[0] + ours[1]) / 2, rate)
     mf, _, _ = cells((official[0] + official[1]) / 2, rate)
-    width, width_abs = {}, {}
+    width, width_abs, side_level, width_scored = {}, {}, {}, {}
     for lo, hi in [(120, 16000)] + WIDTH_BANDS:
         rows = (centers >= lo) & (centers < hi)
         m = mask[rows]
         key = "all" if (lo, hi) == (120, 16000) else f"{lo}-{hi}"
-        width[key] = r2(db(so[rows][m].sum()) - db(sf[rows][m].sum()))
-        width_abs[key] = [r2(db(so[rows][m].sum()) - db(mo[rows][m].sum())), r2(db(sf[rows][m].sum()) - db(mf[rows][m].sum()))]
+        width_scored[key] = round(float(m.any(axis=0).sum()) * HOP_S, 1)
+        if width_scored[key] < 1:
+            width[key], width_abs[key], side_level[key] = None, None, None
+            continue
+        ours_ratio = db(so[rows][m].sum()) - db(mo[rows][m].sum())
+        off_ratio = db(sf[rows][m].sum()) - db(mf[rows][m].sum())
+        # Width is side against mid in the same band, so a band that is only louder or quieter is not a width gap.
+        width[key] = r2(ours_ratio - off_ratio)
+        width_abs[key] = [r2(ours_ratio), r2(off_ratio)]
+        side_level[key] = r2(db(so[rows][m].sum()) - db(sf[rows][m].sum()))
 
     def scored_hits(times, lo, hi):
         rows = (centers * 2 ** (1 / 6) > lo) & (centers / 2 ** (1 / 6) < hi)
@@ -187,39 +199,46 @@ def grade(song, master_path=None):
         frames_ = env(x, rate)
         return db(np.percentile(frames_, 99.5)) - db(frames_.mean())
     crest_gap = r2(crest(ours) - crest(official))
-    def judge(band_items, punch_items):
+    def judge(band_items, punch_items, width_items):
         gates = {"bands": all(abs(v) <= TOL["band"] for v in band_items),
                  "kick": all(abs(v) <= TOL["punch"] for k, v in punch_items if k.startswith("kick")),
                  "snare": all(abs(v) <= TOL["punch"] for k, v in punch_items if k.startswith("snare")),
-                 "width": all(abs(v) <= TOL["width"] for v in width.values())}
+                 "width": all(abs(v) <= TOL["width"] for v in width_items)}
         excess = (sum(max(0, abs(v) - TOL["band"]) for v in band_items) + sum(max(0, abs(v) - TOL["punch"]) for _, v in punch_items)
-                  + sum(max(0, abs(v) - TOL["width"]) for v in width.values()))
+                  + sum(max(0, abs(v) - TOL["width"]) for v in width_items))
         total = (sum(abs(v) for v in band_items) / TOL["band"] + sum(abs(v) for _, v in punch_items) / TOL["punch"]
-                 + sum(abs(v) for v in width.values()) / TOL["width"])
+                 + sum(abs(v) for v in width_items) / TOL["width"])
         return gates, excess, total
 
     punch_keys = [k for k in ("kick_low", "kick_click", "snare_body", "snare_crack") if punch.get(k) is not None]
-    strict = judge([v for v in bands.values() if v is not None], [(k, punch[k]) for k in punch_keys])
+    strict = judge([v for v in bands.values() if v is not None], [(k, punch[k]) for k in punch_keys],
+                   [v for v in width.values() if v is not None])
     # A band scored on under 8 s, or a punch on under 15 hits, is reported but does not gate (002: 9 masked hits read +4.5 dB, 109 unmasked hits +0.9).
     confident = judge([v for k, v in bands.items() if v is not None and scored[k] >= MIN_SCORED_S],
-                      [(k, punch[k]) for k in punch_keys if raw[k][2] >= MIN_HITS])
+                      [(k, punch[k]) for k in punch_keys if raw[k][2] >= MIN_HITS],
+                      [v for k, v in width.items() if v is not None and width_scored[k] >= MIN_SCORED_S])
     low_confidence = [k for k, v in bands.items() if v is not None and scored[k] < MIN_SCORED_S] + \
-                     [k for k in punch_keys if raw[k][2] < MIN_HITS]
+                     [k for k in punch_keys if raw[k][2] < MIN_HITS] + \
+                     [f"width {k}" for k, v in width.items() if v is not None and width_scored[k] < MIN_SCORED_S]
+    # A drum measure with too few scored hits is not a pass: it is unmeasured, and the grade says so.
+    unmeasured = [k for k in ("kick_low", "kick_click", "snare_body", "snare_crack") if punch.get(k) is None]
     gates, excess, total = confident
     return {"song": song.name, "scored_s_by_octave": scored, "align_lag_samples": lag, "match_gain_db": r2(gain_db),
             "bands": bands, "thirds": thirds, "low_thirds": low_thirds,
-            "punch": punch, "punch_raw_ours_official_n": raw, "width": width, "side_mid_ours_official": width_abs,
-            "lowmid_160": lowmid, "crest": crest_gap, "gates": gates, "pass": all(gates.values()),
-            "excess": r2(excess), "total": r2(total), "low_confidence": low_confidence,
-            "pass_strict": all(strict[0].values()), "excess_strict": r2(strict[1]), "total_strict": r2(strict[2])}
+            "punch": punch, "punch_raw_ours_official_n": raw, "width": width, "side_mid_ours_official": width_abs, "side_level_diagnostic": side_level, "width_scored_s": width_scored,
+            "lowmid_160": lowmid, "crest": crest_gap, "gates": gates, "pass": all(gates.values()) and export_ok is not False,
+            "excess": r2(excess), "total": r2(total), "low_confidence": low_confidence, "unmeasured": unmeasured,
+            "graded_file": str(Path(path).name), "export_ok": export_ok,
+            "pass_strict": all(strict[0].values()) and export_ok is not False and not unmeasured, "excess_strict": r2(strict[1]), "total_strict": r2(strict[2])}
 
 
 def line(g):
     b = " ".join(f"{k}:{v:+.1f}" if v is not None else f"{k}:-" for k, v in g["bands"].items())
     p = " ".join(f"{k}:{v:+.1f}" for k, v in g["punch"].items() if v is not None)
-    w = " ".join(f"{k}:{v:+.1f}" for k, v in g["width"].items())
+    w = " ".join(f"{k}:{v:+.1f}" if v is not None else f"{k}:-" for k, v in g["width"].items())
     return (f"{g['song'][:24]:24s} pass={g['pass']!s:5s} excess={g['excess']:5.1f} total={g['total']:5.1f} "
-            f"| strict pass={g['pass_strict']!s:5s} excess={g['excess_strict']:5.1f} low-confidence {g['low_confidence']}\n"
+            f"| strict pass={g['pass_strict']!s:5s} excess={g['excess_strict']:5.1f} low-confidence {g['low_confidence']} "
+            f"unmeasured {g['unmeasured']} file {g['graded_file']} export_ok {g['export_ok']}\n"
             f"  bands {b}\n  scored_s {g['scored_s_by_octave']}\n  hi-thirds {g['thirds']}  lowmid160 {g['lowmid_160']}  crest {g['crest']}\n"
             f"  punch {p}\n  width {w}")
 
