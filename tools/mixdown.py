@@ -13,6 +13,9 @@ if __name__ == "__main__":
     start = time.perf_counter()
     eng = engineer.Engineer(song, workers)
     eng.recipe = json.loads((song / "recipe.json").read_text())
+    # export measures over the full-band frames, which a run sets in setup_stage.
+    eng.length = engineer.daw.length_of(song, eng.recipe)
+    eng.dense = eng.full_band_frames()
     with multiprocessing.get_context("spawn").Pool(workers) as pool:
         checks = eng.export(pool)
     print(json.dumps({"seconds": round(time.perf_counter() - start, 1), "cache_hits": eng.cache.hits, "cache_misses": eng.cache.misses,
