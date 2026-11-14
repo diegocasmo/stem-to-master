@@ -11,7 +11,7 @@ from scipy import ndimage, signal
 from analyze import BAND_CENTERS_HZ, SHORT_TERM_HOP_SECONDS, SHORT_TERM_SECONDS, loudness, measure
 from memo import memoized
 
-ROOT = Path(__file__).resolve().parents[3]
+ROOT = Path(__file__).resolve().parents[1]
 VALLEY_BAND_HZ = (40, 150)
 VALLEY_SMOOTH_MS = 10
 VALLEY_PEAK_MS = 50

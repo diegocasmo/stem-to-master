@@ -1,0 +1,32 @@
+{
+  "profile": "instrumental-prog-metal",
+  "notes": [
+    "Stems trimmed to 0-90.0 s, 44.1 kHz. Instrumental: no vocal or DI stems. 14_Ride.wav is silent in this cut and is left out.",
+    "Sections are 4-bar blocks at 125 bpm (7.68 s), checked against stem activity: the intro is synths plus the kick sample; the breaks (30.72-38.4, 61.44-69.12) drop the guitars to about -20 dB and bring in the hi-hat; Synth6 enters at 76.8 s. The cut ends at 90 s while the band still plays, so the mix fades over the last 2 s.",
+    "The kick sample plays in the intro and on single hits at the ends of the drives; it rarely sums with the kick mics, so it is its own track."
+  ],
+  "sections": {
+    "intro":  {"start_s": 0,     "end_s": 15.36, "group": "intro", "loudness_lu": -6},
+    "riff1":  {"start_s": 15.36, "end_s": 30.72, "group": "riff",  "loudness_lu": 0},
+    "break1": {"start_s": 30.72, "end_s": 38.4,  "group": "break", "loudness_lu": -1.5},
+    "drive1": {"start_s": 38.4,  "end_s": 46.08, "group": "drive", "loudness_lu": 0},
+    "riff2":  {"start_s": 46.08, "end_s": 61.44, "group": "riff",  "loudness_lu": 0},
+    "break2": {"start_s": 61.44, "end_s": 69.12, "group": "break", "loudness_lu": -1.5},
+    "drive2": {"start_s": 69.12, "end_s": 76.8,  "group": "drive", "loudness_lu": 0},
+    "riff3":  {"start_s": 76.8,  "end_s": 87.0,  "group": "riff",  "loudness_lu": 0},
+    "outro":  {"start_s": 87.0,  "end_s": 90.0,  "group": "outro", "loudness_lu": -4}
+  },
+  "fade_out_s": [88.0, 90.0],
+  "dense": "riff1",
+  "sources": {
+    "kick":   {"chain": "kick",  "stems": ["02_KickIn2.wav", "01_KickIn1.wav", "03_KickOut.wav"], "align": [[40, 150], [2000, 6000]]},
+    "kick-sample": {"chain": "kick", "stems": ["04_KickSample.wav"]},
+    "snare":  {"chain": "snare", "stems": ["05_SnareUp1.wav", "06_SnareUp2.wav", "07_SnareDown1.wav", "08_SnareDown2.wav"], "align": [[150, 400], [2000, 6000]]},
+    "toms":   {"chain": "toms",  "stems": ["09_Tom1.wav", "10_Tom2.wav", "11_Tom3.wav", "12_Tom4.wav"], "pan": [-0.35, -0.1, 0.15, 0.4]},
+    "cymbals": {"chain": "overheads", "stems": ["15_Overheads.wav", "13_HiHat.wav"], "pan": [0, -0.4]},
+    "room":   {"chain": "overheads", "stems": ["16_DrumsRoom.wav"]},
+    "bass":   {"chain": "bass",  "stems": ["19_Bass.wav"]},
+    "gtr":    {"chain": "guitars", "stems": ["20_ElecGtr1.wav", "21_ElecGtr1DT.wav", "22_ElecGtr2.wav", "23_ElecGtr2DT.wav"], "pan": [-1, 1, -0.75, 0.75]},
+    "synths": {"chain": "synths", "role": "pad", "stems": ["24_Synth1.wav", "25_Synth2.wav", "26_Synth3.wav", "27_Synth4.wav", "28_Synth5.wav", "29_Synth6.wav"]}
+  }
+}
