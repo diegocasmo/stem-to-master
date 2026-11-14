@@ -55,7 +55,7 @@ Goal: a tight low-end thump and a clear click that both survive the master, even
 - **Why:** the guitars' lows can mask the kick too, once the bass makes room.
 - **Start:** as kick.duck-bass, on the guitar bus, judged with any kept bass duck in place.
 - **Tool:** native `Duck` (`key` kick, `band_hz` [null, 150]).
-- **Needed if:** the kick low prominence in the full mix (after the bass duck) is under `KICK_LOW_PROMINENCE` 12.5 dB.
+- **Needed if:** the kick has at least 4 hits (else "dropped: under 4 kick hits") and its low prominence in the full mix (after the bass duck) is under `KICK_LOW_PROMINENCE` 12.5 dB.
 - **Worked if:** as kick.duck-bass, with the guitars' 40-150 Hz between kick hits.
 
 ### kick.click
