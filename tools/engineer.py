@@ -390,12 +390,15 @@ class Engineer:
     CEILING = -1.3
     # Group loudness against the guitars over the full-band frames (LU).
     TARGETS_LU = {"kick": -4.0, "snare": -4.0, "bass": -3.0, "cymbals": -9.0, "room": -13.0, "synths": -7.0}
-    # Genre rules, the same for every song: hit prominence in the mix (dB) the faders aim for, the kick's low decay,
-    # the low-mid build-up and the air tilt that trigger a move, and the master's limits on punch loss.
+    # Genre rules, the same for every song: the kick's low prominence under which the bass and guitars duck, the
+    # kick's low decay, the low-mid build-up and the air tilt that trigger a move, and the master's limits on punch loss.
     KICK_LOW_PROMINENCE = 12.5
-    MASTER_KICK_PROMINENCE = 10.0
-    MASTER_SNARE_PROMINENCE = 12.5
-    SNARE_BODY_PROMINENCE = 14.0
+    # Punch is a range, not a point: the master's kick and snare must sit within the officials' span by this measure
+    # (kick 9.4-10.6 dB, snare 10.1-12.9 dB). Inside it the faders stay at the static balance, so the moves in front of
+    # them keep their effect. The mix pass aims the same range up by the usual master loss.
+    MASTER_KICK_RANGE = (9.4, 10.6)
+    MASTER_SNARE_RANGE = (10.1, 12.9)
+    MIX_PUNCH_LOSS = {"kick_low": 2.5, "snare_body": 1.5}
     KICK_TAIL_DB = -14.0
     LOWMID_BUILDUP_DB = 2.5
     AIR_TILT_DB = -10.5
@@ -408,8 +411,8 @@ class Engineer:
     SUB_SOURCE_DB = -4.0
     SUB_CUT_DEPTH_DB = 4.0
     CREST_LOSS_DB = 3.0
-    # Export gates: the master's kick and snare must still stand out (the tuning songs' officials: kick 9.4-10.6 dB,
-    # snare 10.1-12.9 dB by this measure).
+    # Export gates: the master's kick and snare must still stand out, a little under MASTER_KICK_RANGE and
+    # MASTER_SNARE_RANGE.
     KICK_GATE_DB = 8.5
     SNARE_GATE_DB = 9.0
     MIN_SIDE_MID_DB = -12.0
@@ -939,20 +942,21 @@ class Engineer:
         snare = punchlib.drum_hits(mixer.node_audio("snare"), self.rate, "snare") if self.has("snare") else np.array([])
         return kick, snare
 
-    def punch_faders(self, mixer, targets=None):
-        """Kick and snare faders move (at most 9 dB over or 6 dB under the static balance) until their hits stand out of
-        the mix by the target. A fader whose travel does not move the measure (wrong hits) stays where it is."""
+    def punch_faders(self, mixer, loss=None):
+        """Kick and snare faders move (at most 9 dB over or 6 dB under the static balance) only as far as it takes to
+        bring their hits' prominence in the mix into the range: the master range plus what the master takes away. A
+        fader whose travel does not move the measure (wrong hits) stays where it is."""
         kick_s, snare_s = self.drum_times(mixer)
         self.kick_s, self.snare_s = kick_s, snare_s
-        targets = targets or {"kick_low": self.KICK_LOW_PROMINENCE, "snare_body": self.SNARE_BODY_PROMINENCE}
-        for name, key, target, times in (("kick", "kick_low", targets["kick_low"], kick_s),
-                                         ("snare", "snare_body", targets["snare_body"], snare_s)):
+        loss = self.MIX_PUNCH_LOSS if loss is None else loss
+        for name, key, (low, high), times in (("kick", "kick_low", self.MASTER_KICK_RANGE, kick_s),
+                                              ("snare", "snare_body", self.MASTER_SNARE_RANGE, snare_s)):
             if not self.has(name) or len(times) < 4:
                 continue
+            low, high = low + loss[key], high + loss[key]
             start = self.bus(name)["fader_db"]
             base = self.static_faders.get(name, start)
             tried = []
-            chosen = start
             for step in [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, -1, -2, -3, -4, -5, -6]:
                 # At most 9 dB over and 6 dB under the static balance, however many passes run.
                 if not -6 <= start + step - base <= 9:
@@ -960,15 +964,17 @@ class Engineer:
                 faders = {name: start + step}
                 found = punch_of(self.mix_of(mixer, faders), self.rate, kick_s, snare_s)[key]
                 tried.append({"step_db": step, key: found})
+                if step == 0 and low <= found <= high:
+                    break
             ups = [t for t in tried if t["step_db"] >= 0]
-            if ups[-1][key] - tried[0][key] < 1.0 and tried[0][key] < target:
+            if ups[-1][key] - tried[0][key] < 1.0 and tried[0][key] < low:
                 reach = tried[0]
             else:
-                reach = min(tried, key=lambda t: (abs(t[key] - target), abs(t["step_db"])))
+                reach = min(tried, key=lambda t: (max(low - t[key], 0.0, t[key] - high), abs(t["step_db"])))
             chosen = start + reach["step_db"]
             self.bus(name)["fader_db"] = round(chosen, 2)
-            self.log("balance.punch", name, "kept" if reach["step_db"] else "dropped: on target",
-                     {"target_db": target, "tried": tried, "fader_db": round(chosen, 2)})
+            self.log("balance.punch", name, "kept" if reach["step_db"] else "dropped: in range",
+                     {"range_db": [r2(low), r2(high)], "tried": tried, "fader_db": round(chosen, 2)})
 
     # ---------- stage 5: context moves on the full mix ----------
 
@@ -981,8 +987,9 @@ class Engineer:
         presence = lambda g: {"plugin": "PeakFilter", "settings": {"cutoff_frequency_hz": 3000.0, "gain_db": g, "q": 0.7}}
         self.tilt(self.rendered(pool), "presence", (2000, 4000), (125, 250), self.PRESENCE_TILT_DB, 1, presence, (1.5, 3.0, 4.5, 6.0))
         self.tilt(self.rendered(pool), "presence", (2000, 4000), (125, 250), self.PRESENCE_TILT_DB, -1, presence, (-1.5, -3.0, -4.5))
-        # Air and top follow the cymbals as recorded: a bright cymbal source is left bright, a dull one gets lifted.
-        shift = -self.CYMBAL_AIR_SLOPE * (self.cymbal_air(self.rendered(pool)) - self.CYMBAL_AIR_REF_DB)
+        # Air and top follow the cymbals as recorded: the further their brightness sits from the reference either way,
+        # the less the rule lifts. A bright source needs less; the officials kept dull cymbals dull.
+        shift = -self.CYMBAL_AIR_SLOPE * abs(self.cymbal_air(self.rendered(pool)) - self.CYMBAL_AIR_REF_DB)
         self.tilt(self.rendered(pool), "air", (8000, 16000), (1000, 4000), self.AIR_TILT_DB + shift, 1,
                   lambda g: {"plugin": "HighShelfFilter", "settings": {"cutoff_frequency_hz": 7000.0, "gain_db": g, "q": 0.707}}, (2.0, 4.0, 6.0))
         self.tilt(self.rendered(pool), "top", (11300, 16000), (5600, 11300), self.TOP_TILT_DB + shift, 1,
@@ -1286,10 +1293,9 @@ class Engineer:
         mixer = self.rendered(pool)
         best, _ = self.master_select(mixer, mixer.nodes["mix"][1])
         loss = best[2] if best else {}
-        targets = {"kick_low": self.MASTER_KICK_PROMINENCE + max(0.0, loss.get("kick_low", 0.0)),
-                   "snare_body": self.MASTER_SNARE_PROMINENCE + max(0.0, loss.get("snare_body", 0.0))}
-        self.log("balance.punch-targets", "mix", "measured", {"trial_master_loss_db": loss, "mix_targets_db": {k: r2(v) for k, v in targets.items()}})
-        self.punch_faders(mixer, targets)
+        loss = {k: max(0.0, loss.get(k, 0.0)) for k in ("kick_low", "snare_body")}
+        self.log("balance.punch-targets", "mix", "measured", {"trial_master_loss_db": loss})
+        self.punch_faders(mixer, loss)
 
     # ---------- stage 7: the master ----------
 

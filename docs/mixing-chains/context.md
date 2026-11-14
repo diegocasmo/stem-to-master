@@ -24,11 +24,11 @@ Goal: moves on the whole song or the full mix: what each stem is, where the full
 - **Worked if:** always kept; it is a level match, not a trial.
 
 ### balance.punch
-- **Why:** kick and snare must stand out of the full mix by a set amount; a fader is the cleanest way there.
-- **Start:** kick fader for kick low prominence, snare fader for snare body prominence, in the full mix. Steps 0 to +9 dB, then -1 to -6 dB, limited to 9 dB over and 6 dB under the static balance. Targets: `KICK_LOW_PROMINENCE` 12.5 dB and `SNARE_BODY_PROMINENCE` 14.0 dB here; in rebalance, the targets from balance.punch-targets.
+- **Why:** kick and snare must stand out of the full mix within the officials' range; a fader is the cleanest way there. Inside the range the fader stays, so the moves in front of it keep their effect.
+- **Start:** kick fader for kick low prominence, snare fader for snare body prominence, in the full mix. Steps 0 to +9 dB, then -1 to -6 dB, limited to 9 dB over and 6 dB under the static balance. Ranges: `MASTER_KICK_RANGE` 9.4-10.6 dB and `MASTER_SNARE_RANGE` 10.1-12.9 dB, raised by the master's loss: `MIX_PUNCH_LOSS` (kick 2.5, snare 1.5 dB) here, the measured loss from balance.punch-targets in rebalance.
 - **Tool:** bus `fader_db`.
 - **Needed if:** the bus exists and has at least 4 hits.
-- **Worked if:** the step closest to the target wins (the smaller move on a tie). If the highest step lifts the measure by less than 1 dB and it is under the target, the fader stays. Kept if the fader moved; else "dropped: on target".
+- **Worked if:** if step 0 is in the range, the fader stays. Else the step closest to the range wins (the smaller move on a tie). If the highest step lifts the measure by less than 1 dB and it is under the range, the fader stays. Kept if the fader moved; else "dropped: in range".
 
 ### lowmid.cut
 - **Why:** a 125-200 Hz build-up makes the mix woolly. It is cut on the source that owns it, not on the whole mix.
@@ -55,22 +55,22 @@ Goal: moves on the whole song or the full mix: what each stem is, where the full
 - **Why:** air follows the cymbals as recorded: a bright cymbal source is left bright, a dull one gets lifted.
 - **Start:** a high shelf at 7 kHz, Q 0.707, on the owner: +2, +4, +6 dB. Owners as for presence, by 8-16 kHz level.
 - **Tool:** `HighShelfFilter`.
-- **Needed if:** the mix's 8-16 kHz minus 1-4 kHz is more than 1 dB under `AIR_TILT_DB` -10.5 dB plus the cymbal shift: `CYMBAL_AIR_SLOPE` 1.0 × (`CYMBAL_AIR_REF_DB` -4.3 dB minus overheads.brightness).
+- **Needed if:** the mix's 8-16 kHz minus 1-4 kHz is more than 1 dB under `AIR_TILT_DB` -10.5 dB minus the cymbal shift: `CYMBAL_AIR_SLOPE` 1.0 × the distance between overheads.brightness and `CYMBAL_AIR_REF_DB` -4.3 dB, either way (bright cymbals need less lift; dull ones stay dull).
 - **Worked if:** as presence, upward only. A rest over 1 dB goes to mix-bus.air.
 
 ### top
 - **Why:** the top octave sets how open the mix sounds, and follows the cymbals the same way as air.
 - **Start:** a high shelf at 12 kHz, Q 0.707, on the owner: +2, +4, +6 dB. Owners as for presence, by 11.3-16 kHz level.
 - **Tool:** `HighShelfFilter`.
-- **Needed if:** the mix's 11.3-16 kHz minus 5.6-11.3 kHz is more than 1 dB under `TOP_TILT_DB` -10.3 dB plus the same cymbal shift.
+- **Needed if:** the mix's 11.3-16 kHz minus 5.6-11.3 kHz is more than 1 dB under `TOP_TILT_DB` -10.3 dB minus the same cymbal shift.
 - **Worked if:** as presence, upward only. A rest over 1 dB goes to mix-bus.top.
 
 ### balance.punch-targets
 - **Why:** the punch that counts is the master's. The master costs some punch, so the mix must carry that much more.
 - **Start:** after glue, a trial master (as master.limit, at the profile loudness) on the current mix measures the crest loss of kick low and snare body.
-- **Tool:** none; a measure. balance.punch then runs again with these targets.
+- **Tool:** none; a measure. balance.punch then runs again with these losses.
 - **Needed if:** always.
-- **Worked if:** logged as measured. Targets: `MASTER_KICK_PROMINENCE` 10.0 dB and `MASTER_SNARE_PROMINENCE` 12.5 dB, each plus its loss when the loss is positive.
+- **Worked if:** logged as measured. Each loss counts only when positive.
 
 ## Not built
 
