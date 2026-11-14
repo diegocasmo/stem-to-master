@@ -1147,6 +1147,11 @@ class Engineer:
             return
         rate, length = self.rate, mixer.length
         kick_hits = (punchlib.drum_hits(mixer.node_audio("kick"), rate, "kick") * rate).astype(int)
+        if len(kick_hits) < 4:
+            for name in ("bass", "gtr"):
+                if self.has(name):
+                    self.log(f"kick.duck-{name}", name, "dropped: under 4 kick hits", {"kick_hits": len(kick_hits)})
+            return
         kick_level = float(np.median(meters.hit_stats(mixer.node_audio("kick"), rate, kick_hits)["level_db"]))
         between = ~meters.windows(length, kick_hits, rate, (-5, 150))
         replaced = {}
