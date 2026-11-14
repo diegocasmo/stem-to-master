@@ -734,6 +734,7 @@ class Engineer:
         self.guitar_pairs(mixer)
         mixer = self.rendered(pool)
         self.kick_shape(mixer)
+        self.snare_ring(mixer)
 
     def hit_level(self, audio, times):
         return float(np.median(meters.hit_stats(audio.astype(np.float32), self.rate, times)["level_db"]))
@@ -868,6 +869,22 @@ class Engineer:
             l, r = self.loud(mixer.node_audio(t["name"]), self.dense), self.loud(mixer.node_audio(partner["name"]), self.dense)
             t["fader_db"], partner["fader_db"] = round((r - l) / 2, 2), round((l - r) / 2, 2)
             self.log("guitars.pair", f"{t['name']}+{partner['name']}", "kept", {"left_lufs": r2(l), "right_lufs": r2(r)})
+
+    def snare_ring(self, mixer):
+        """snare.ring-cut: a narrow resonance 300-900 Hz standing 6 dB over its neighbourhood in the blended snare."""
+        if not self.has("snare"):
+            return
+        audio, key = mixer.summed("snare", self.recipe["tracks"] + self.recipe["buses"])
+        node = Node("snare", audio.astype(np.float32), key, self.cache, self.rate, {})
+        peaks = narrow_peaks(node, 300, 900)
+        if peaks:
+            f, rise = peaks[0]
+            eq_cut_if(node, "snare.ring-cut", True, {"peak_hz": r2(f), "rise_db": r2(rise)}, f, [-4.0, -6.0], 4.0,
+                      (f / 1.08, f * 1.08), keep=(150, 250))
+        else:
+            node.record("snare.ring-cut", "dropped: not needed", {"narrow_peaks_over_6db": 0})
+        self.bus("snare")["inserts"].extend(node.inserts)
+        self.recipe["decisions"].extend(node.decisions)
 
     def kick_shape(self, mixer):
         """The kick's low tail: a hit-gated decay below 150 Hz, the smallest depth that reaches the decay target."""
