@@ -1193,7 +1193,7 @@
    }
   },
   {
-   "move": "snare.hpf-lpf",
+   "move": "snare.hpf",
    "target": "02_SnareUp",
    "outcome": "dropped: not needed",
    "numbers": {
@@ -1203,7 +1203,7 @@
    }
   },
   {
-   "move": "snare.hpf-lpf",
+   "move": "snare.hpf",
    "target": "03_SnareDown",
    "outcome": "dropped: not needed",
    "numbers": {
@@ -1717,7 +1717,6 @@
     "keep_db": -31.76,
     "lowest_f0_hz": 27.36,
     "median_f0_hz": 32.67,
-    "fundamental_db": -43.48,
     "tried": [
      {
       "settings": {
@@ -2684,13 +2683,13 @@
      {
       "gain_db": -2.0,
       "buildup_db": 2.67,
-      "owner_100hz_change": -0.8,
+      "owner_keep_change": -0.8,
       "ok": true
      },
      {
       "gain_db": -3.0,
       "buildup_db": 2.11,
-      "owner_100hz_change": -1.2,
+      "owner_keep_change": -1.2,
       "ok": true
      }
     ]

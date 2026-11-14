@@ -9,9 +9,9 @@ Goal: a crack that cuts through dense guitars, a body with weight, and hits that
 - **Needed if:** the snare has two or more mics (sample stems excluded).
 - **Worked if:** the option with the highest sum gain in 150-400 Hz (rounded to 0.1 dB), then in 2-6 kHz, wins. Kept if it flips or moves the mic; else dropped as recorded.
 
-### snare.hpf-lpf
+### snare.hpf
 - **Why:** removes kick spill below the snare body.
-- **Start:** a 12 dB/oct high-pass at 80 Hz on each snare mic (not samples). No low-pass is tried.
+- **Start:** a 12 dB/oct high-pass at 80 Hz on each snare mic (not samples).
 - **Tool:** `ZL Equalizer 2`.
 - **Needed if:** the mic's 20-80 Hz is within 20 dB of its 150-250 Hz.
 - **Worked if:** 20-80 Hz falls by at least 1 dB and 150-250 Hz holds within 0.5 dB.

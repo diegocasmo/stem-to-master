@@ -118,7 +118,7 @@
    "channels": 1,
    "inserts": [
     {
-     "id": "snare.hpf-lpf",
+     "id": "snare.hpf",
      "plugin": "ZL Equalizer 2",
      "settings": {
       "filter_status0_filter_status": "On",
@@ -1129,7 +1129,7 @@
    }
   },
   {
-   "move": "snare.hpf-lpf",
+   "move": "snare.hpf",
    "target": "05_SnareUp1",
    "outcome": "dropped: not needed",
    "numbers": {
@@ -1139,7 +1139,7 @@
    }
   },
   {
-   "move": "snare.hpf-lpf",
+   "move": "snare.hpf",
    "target": "06_SnareUp2",
    "outcome": "dropped: not needed",
    "numbers": {
@@ -1149,7 +1149,7 @@
    }
   },
   {
-   "move": "snare.hpf-lpf",
+   "move": "snare.hpf",
    "target": "07_SnareDown1",
    "outcome": "dropped: not needed",
    "numbers": {
@@ -1159,7 +1159,7 @@
    }
   },
   {
-   "move": "snare.hpf-lpf",
+   "move": "snare.hpf",
    "target": "08_SnareDown2",
    "outcome": "kept",
    "numbers": {
@@ -1799,7 +1799,7 @@
   {
    "move": "kick.blend",
    "target": "kick",
-   "outcome": "dropped: all at 0 is best",
+   "outcome": "kept",
    "numbers": {
     "mics": [
      "03_KickOut",
@@ -2681,25 +2681,25 @@
      {
       "gain_db": -2.0,
       "buildup_db": 4.19,
-      "owner_100hz_change": -0.35,
+      "owner_keep_change": -0.35,
       "ok": true
      },
      {
       "gain_db": -3.0,
       "buildup_db": 3.72,
-      "owner_100hz_change": -0.52,
+      "owner_keep_change": -0.52,
       "ok": true
      },
      {
       "gain_db": -4.5,
       "buildup_db": 3.26,
-      "owner_100hz_change": -0.79,
+      "owner_keep_change": -0.79,
       "ok": true
      },
      {
       "gain_db": -6.0,
       "buildup_db": 3.29,
-      "owner_100hz_change": -1.08,
+      "owner_keep_change": -1.08,
       "ok": true
      }
     ]

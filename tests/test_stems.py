@@ -21,3 +21,14 @@ def test_classify_leaves_out_vocals_di_and_silence_and_reads_unnamed_audio(tmp_p
     found, left_out = stems.classify(tmp_path)
     assert {s["stem"]: (s["class"], s["by"]) for s in found} == {"Track 8.wav": ("bass", "content"), "Track 9.wav": ("kick", "content")}
     assert {s["stem"]: s["why"] for s in left_out} == {"Lead Vox.wav": "vocal", "BassDI.wav": "di", "Track 7.wav": "silent"}
+
+
+def test_sample_and_double_flags(tmp_path):
+    # Samples stay out of mic alignment and DT tracks pair with their guitar: a DT must never read as a DI.
+    t = np.arange(4 * RATE) / RATE
+    for name in ("02_KickSample", "21_ElecGtr1", "22_ElecGtr1DT"):
+        soundfile.write(tmp_path / f"{name}.wav", kicks(4) if "Kick" in name else 0.1 * np.sin(2 * np.pi * 110 * t), RATE, subtype="FLOAT")
+    found, left_out = stems.classify(tmp_path)
+    assert {s["name"]: (s["sample"], s["double"]) for s in found} == {
+        "02_KickSample": (True, False), "21_ElecGtr1": (False, False), "22_ElecGtr1DT": (False, True)}
+    assert not left_out

@@ -13,11 +13,25 @@ import tomllib
 import urllib.request
 from pathlib import Path
 
-from prepared import bundle_hash
-
 ROOT = Path(__file__).resolve().parents[1]
 LOCK = ROOT / "plugins.lock"
 PLUGINS = ROOT / "plugins"
+
+
+def bundle_hash(bundle):
+    """The installed .vst3: every file's relative path, size and bytes, in path order."""
+    digest = hashlib.sha256()
+    for path in sorted(bundle.rglob("*")):
+        if not path.is_file():
+            continue
+        relative = path.relative_to(bundle).as_posix().encode()
+        digest.update(len(relative).to_bytes(8, "big"))
+        digest.update(relative)
+        digest.update(path.stat().st_size.to_bytes(8, "big"))
+        with path.open("rb") as source:
+            while block := source.read(1024 * 1024):
+                digest.update(block)
+    return digest.hexdigest()
 
 
 def fail(name, message):

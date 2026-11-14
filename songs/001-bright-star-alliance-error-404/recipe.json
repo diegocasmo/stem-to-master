@@ -750,7 +750,7 @@
    }
   },
   {
-   "move": "snare.hpf-lpf",
+   "move": "snare.hpf",
    "target": "03_Snare",
    "outcome": "dropped: not needed",
    "numbers": {
@@ -1522,25 +1522,25 @@
      {
       "gain_db": -2.0,
       "buildup_db": 1.5,
-      "owner_100hz_change": -1.51,
+      "owner_keep_change": -1.51,
       "ok": false
      },
      {
       "gain_db": -3.0,
       "buildup_db": 1.06,
-      "owner_100hz_change": -2.25,
+      "owner_keep_change": -2.25,
       "ok": false
      },
      {
       "gain_db": -4.5,
       "buildup_db": 0.5,
-      "owner_100hz_change": -3.35,
+      "owner_keep_change": -3.35,
       "ok": false
      },
      {
       "gain_db": -6.0,
       "buildup_db": 0.27,
-      "owner_100hz_change": -4.44,
+      "owner_keep_change": -4.44,
       "ok": false
      }
     ]
