@@ -1,3 +1,4 @@
+import http.client
 import io
 
 import pytest
@@ -21,4 +22,13 @@ def test_an_installed_bundle_with_another_hash_stops_the_install(tmp_path, monke
     (tmp_path / "Fake.vst3" / "Contents").mkdir(parents=True)
     (tmp_path / "Fake.vst3" / "Contents" / "binary").write_bytes(b"other build")
     with pytest.raises(SystemExit, match="plugin Fake: installed bundle sha256 .* mismatch, expected 1+, actual"):
+        plugins.install(ENTRY)
+
+
+def test_a_cut_off_download_stops_the_install_with_both_hashes(tmp_path, monkeypatch):
+    def cut_off(*a, **k):
+        raise http.client.IncompleteRead(b"partial")
+    monkeypatch.setattr(plugins, "PLUGINS", tmp_path)
+    monkeypatch.setattr(plugins.urllib.request, "urlopen", cut_off)
+    with pytest.raises(SystemExit, match="plugin Fake: download failed .* expected sha256 0+, actual none"):
         plugins.install(ENTRY)

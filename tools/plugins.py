@@ -4,6 +4,7 @@ A bundle already in plugins/ with the locked hash is kept. Anything else (failed
 hash) stops with the plugin's name, so a run never continues with a plugin other than the locked one.
 """
 import hashlib
+import http.client
 import shutil
 import subprocess
 import sys
@@ -33,8 +34,8 @@ def download(entry, folder):
     try:
         with urllib.request.urlopen(entry["url"], timeout=120) as response, path.open("wb") as out:
             shutil.copyfileobj(response, out)
-    except OSError as error:
-        fail(entry["name"], f"download failed from {entry['url']}: {error}")
+    except (OSError, http.client.HTTPException) as error:
+        fail(entry["name"], f"download failed from {entry['url']} ({error!r}), expected sha256 {entry['sha256']}, actual none")
     with path.open("rb") as source:
         check(entry["name"], "download sha256", entry["sha256"], hashlib.file_digest(source, "sha256").hexdigest())
     return path
