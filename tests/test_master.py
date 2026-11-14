@@ -1,9 +1,10 @@
 import soundfile
 
 import engineer
-from conftest import RATE, kicks, noise
+from conftest import RATE, kicks, needs_plugins, noise
 
 
+@needs_plugins
 def test_export_releases_only_a_master_at_profile_loudness_under_the_true_peak_ceiling(tmp_path, monkeypatch):
     (tmp_path / "stems").mkdir()
     soundfile.write(tmp_path / "stems" / "Kick.wav", kicks(8), RATE, subtype="PCM_24")
