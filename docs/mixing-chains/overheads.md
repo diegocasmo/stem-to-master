@@ -56,7 +56,7 @@ Goal: clear, wide cymbals that never get harsh, and a room that adds size withou
 - **Start:** the cymbal bus input's 8-16 kHz minus its 1-4 kHz, over the full-band frames.
 - **Tool:** none; a measure.
 - **Needed if:** the song has a cymbals bus (else `CYMBAL_AIR_REF_DB` -4.3 dB is used and nothing is logged).
-- **Worked if:** logged as measured; air and top shift their rule by `CYMBAL_AIR_SLOPE` 1.0 × (`CYMBAL_AIR_REF_DB` minus this).
+- **Worked if:** logged as measured; air and top lower their rule by `CYMBAL_AIR_SLOPE` 1.0 × the distance between this and `CYMBAL_AIR_REF_DB`, either way.
 
 ## Not built
 
