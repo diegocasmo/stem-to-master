@@ -1,0 +1,3393 @@
+{
+ "profile": "instrumental-prog-metal",
+ "sections": {},
+ "tracks": [
+  {
+   "name": "01_Kick",
+   "stem": "01_Kick.wav",
+   "class": "kick",
+   "group": "kick",
+   "sample": false,
+   "double": false,
+   "channels": 1,
+   "inserts": [],
+   "fader_db": 0.0,
+   "pan": 0.0,
+   "out": "kick",
+   "sends": []
+  },
+  {
+   "name": "02_SnareUp",
+   "stem": "02_SnareUp.wav",
+   "class": "snare",
+   "group": "snare",
+   "sample": false,
+   "double": false,
+   "channels": 1,
+   "inserts": [],
+   "fader_db": 0.0,
+   "pan": 0.0,
+   "out": "snare",
+   "sends": []
+  },
+  {
+   "name": "03_SnareDown",
+   "stem": "03_SnareDown.wav",
+   "class": "snare",
+   "group": "snare",
+   "sample": false,
+   "double": false,
+   "channels": 1,
+   "inserts": [],
+   "fader_db": -12.0,
+   "pan": 0.0,
+   "out": "snare",
+   "sends": [],
+   "invert": false,
+   "offset_samples": 0
+  },
+  {
+   "name": "05_Tom1",
+   "stem": "05_Tom1.wav",
+   "class": "toms",
+   "group": "toms",
+   "sample": false,
+   "double": false,
+   "channels": 1,
+   "inserts": [],
+   "fader_db": 0.0,
+   "pan": -0.4,
+   "out": "toms",
+   "sends": []
+  },
+  {
+   "name": "06_Tom2",
+   "stem": "06_Tom2.wav",
+   "class": "toms",
+   "group": "toms",
+   "sample": false,
+   "double": false,
+   "channels": 1,
+   "inserts": [],
+   "fader_db": 0.0,
+   "pan": 0.0,
+   "out": "toms",
+   "sends": []
+  },
+  {
+   "name": "07_Tom3",
+   "stem": "07_Tom3.wav",
+   "class": "toms",
+   "group": "toms",
+   "sample": false,
+   "double": false,
+   "channels": 1,
+   "inserts": [
+    {
+     "id": "toms.clean",
+     "plugin": "Ride",
+     "settings": {
+      "segments": [
+       [
+        0.0,
+        7.9898,
+        -80
+       ],
+       [
+        9.1118,
+        14.9383,
+        -80
+       ],
+       [
+        16.9483,
+        19.2507,
+        -80
+       ],
+       [
+        21.2607,
+        30.0,
+        -80
+       ]
+      ],
+      "ramp_ms": 10
+     }
+    }
+   ],
+   "fader_db": 0.0,
+   "pan": 0.4,
+   "out": "toms",
+   "sends": []
+  },
+  {
+   "name": "09_Overheads",
+   "stem": "09_Overheads.wav",
+   "class": "overheads",
+   "group": "cymbals",
+   "sample": false,
+   "double": false,
+   "channels": 2,
+   "inserts": [
+    {
+     "id": "overheads.hpf",
+     "plugin": "ZL Equalizer 2",
+     "settings": {
+      "filter_status0_filter_status": "On",
+      "filter_type0_filter_type": "High Pass",
+      "order0_order": "12 dB/oct",
+      "lrmode0_lrmode": "Stereo",
+      "freq0_freq": 150.0,
+      "gain0_gain": 0.0,
+      "q0_q": 0.707
+     }
+    }
+   ],
+   "fader_db": 0.0,
+   "pan": 0.0,
+   "out": "cymbals",
+   "sends": []
+  },
+  {
+   "name": "10_DrumsRoom",
+   "stem": "10_DrumsRoom.wav",
+   "class": "room",
+   "group": "room",
+   "sample": false,
+   "double": false,
+   "channels": 2,
+   "inserts": [
+    {
+     "id": "overheads.room-blend.lpf",
+     "plugin": "ZL Equalizer 2",
+     "settings": {
+      "filter_status0_filter_status": "On",
+      "filter_type0_filter_type": "Low Pass",
+      "order0_order": "12 dB/oct",
+      "lrmode0_lrmode": "Stereo",
+      "freq0_freq": 7000.0,
+      "gain0_gain": 0.0,
+      "q0_q": 0.707
+     }
+    },
+    {
+     "id": "overheads.room-blend.cut",
+     "plugin": "PeakFilter",
+     "settings": {
+      "cutoff_frequency_hz": 300.0,
+      "gain_db": -4.0,
+      "q": 0.8
+     }
+    },
+    {
+     "id": "overheads.room-blend.compress",
+     "plugin": "ZL Compressor",
+     "settings": {
+      "compressor_style_compressor_style": "Clean",
+      "threshold_db_threshold_db": -30.3,
+      "ratio_ratio": 8.0,
+      "attack_attack": 5.0,
+      "release_release": 40.0,
+      "knee_width_knee_width": 6.0
+     }
+    }
+   ],
+   "fader_db": 0.0,
+   "pan": 0.0,
+   "out": "room",
+   "sends": []
+  },
+  {
+   "name": "11_Ride",
+   "stem": "11_Ride.wav",
+   "class": "ride",
+   "group": "cymbals",
+   "sample": false,
+   "double": false,
+   "channels": 1,
+   "inserts": [
+    {
+     "id": "overheads.close-hpf",
+     "plugin": "ZL Equalizer 2",
+     "settings": {
+      "filter_status0_filter_status": "On",
+      "filter_type0_filter_type": "High Pass",
+      "order0_order": "12 dB/oct",
+      "lrmode0_lrmode": "Stereo",
+      "freq0_freq": 400.0,
+      "gain0_gain": 0.0,
+      "q0_q": 0.707
+     }
+    }
+   ],
+   "fader_db": 0.0,
+   "pan": 0.0,
+   "out": "cymbals",
+   "sends": []
+  },
+  {
+   "name": "12_Cymbal1",
+   "stem": "12_Cymbal1.wav",
+   "class": "cymbal",
+   "group": "cymbals",
+   "sample": false,
+   "double": false,
+   "channels": 1,
+   "inserts": [
+    {
+     "id": "overheads.close-hpf",
+     "plugin": "ZL Equalizer 2",
+     "settings": {
+      "filter_status0_filter_status": "On",
+      "filter_type0_filter_type": "High Pass",
+      "order0_order": "12 dB/oct",
+      "lrmode0_lrmode": "Stereo",
+      "freq0_freq": 400.0,
+      "gain0_gain": 0.0,
+      "q0_q": 0.707
+     }
+    }
+   ],
+   "fader_db": -12.81,
+   "pan": 0.35,
+   "out": "cymbals",
+   "sends": []
+  },
+  {
+   "name": "15_SFX1",
+   "stem": "15_SFX1.wav",
+   "class": "synth",
+   "group": "synths",
+   "sample": false,
+   "double": false,
+   "channels": 1,
+   "inserts": [
+    {
+     "id": "synths.hpf",
+     "plugin": "ZL Equalizer 2",
+     "settings": {
+      "filter_status0_filter_status": "On",
+      "filter_type0_filter_type": "High Pass",
+      "order0_order": "12 dB/oct",
+      "lrmode0_lrmode": "Stereo",
+      "freq0_freq": 80.0,
+      "gain0_gain": 0.0,
+      "q0_q": 0.707
+     }
+    }
+   ],
+   "fader_db": 0.0,
+   "pan": 0.0,
+   "out": "synths",
+   "sends": []
+  },
+  {
+   "name": "16_SFX2",
+   "stem": "16_SFX2.wav",
+   "class": "synth",
+   "group": "synths",
+   "sample": false,
+   "double": false,
+   "channels": 2,
+   "inserts": [
+    {
+     "id": "synths.hpf",
+     "plugin": "ZL Equalizer 2",
+     "settings": {
+      "filter_status0_filter_status": "On",
+      "filter_type0_filter_type": "High Pass",
+      "order0_order": "12 dB/oct",
+      "lrmode0_lrmode": "Stereo",
+      "freq0_freq": 80.0,
+      "gain0_gain": 0.0,
+      "q0_q": 0.707
+     }
+    }
+   ],
+   "fader_db": 0.0,
+   "pan": 0.0,
+   "out": "synths",
+   "sends": []
+  },
+  {
+   "name": "17_SFX3",
+   "stem": "17_SFX3.wav",
+   "class": "synth",
+   "group": "synths",
+   "sample": false,
+   "double": false,
+   "channels": 2,
+   "inserts": [
+    {
+     "id": "synths.hpf",
+     "plugin": "ZL Equalizer 2",
+     "settings": {
+      "filter_status0_filter_status": "On",
+      "filter_type0_filter_type": "High Pass",
+      "order0_order": "12 dB/oct",
+      "lrmode0_lrmode": "Stereo",
+      "freq0_freq": 120.0,
+      "gain0_gain": 0.0,
+      "q0_q": 0.707
+     }
+    }
+   ],
+   "fader_db": 0.0,
+   "pan": 0.0,
+   "out": "synths",
+   "sends": []
+  },
+  {
+   "name": "18_SFX4",
+   "stem": "18_SFX4.wav",
+   "class": "synth",
+   "group": "synths",
+   "sample": false,
+   "double": false,
+   "channels": 1,
+   "inserts": [
+    {
+     "id": "synths.hpf",
+     "plugin": "ZL Equalizer 2",
+     "settings": {
+      "filter_status0_filter_status": "On",
+      "filter_type0_filter_type": "High Pass",
+      "order0_order": "12 dB/oct",
+      "lrmode0_lrmode": "Stereo",
+      "freq0_freq": 80.0,
+      "gain0_gain": 0.0,
+      "q0_q": 0.707
+     }
+    }
+   ],
+   "fader_db": 0.0,
+   "pan": 0.0,
+   "out": "synths",
+   "sends": []
+  },
+  {
+   "name": "19_SFX5",
+   "stem": "19_SFX5.wav",
+   "class": "synth",
+   "group": "synths",
+   "sample": false,
+   "double": false,
+   "channels": 2,
+   "inserts": [
+    {
+     "id": "synths.hpf",
+     "plugin": "ZL Equalizer 2",
+     "settings": {
+      "filter_status0_filter_status": "On",
+      "filter_type0_filter_type": "High Pass",
+      "order0_order": "12 dB/oct",
+      "lrmode0_lrmode": "Stereo",
+      "freq0_freq": 80.0,
+      "gain0_gain": 0.0,
+      "q0_q": 0.707
+     }
+    }
+   ],
+   "fader_db": 0.0,
+   "pan": 0.0,
+   "out": "synths",
+   "sends": []
+  },
+  {
+   "name": "23_Bass",
+   "stem": "23_Bass.wav",
+   "class": "bass",
+   "group": "bass",
+   "sample": false,
+   "double": false,
+   "channels": 1,
+   "inserts": [
+    {
+     "id": "bass.hpf",
+     "plugin": "ZL Equalizer 2",
+     "settings": {
+      "filter_status0_filter_status": "On",
+      "filter_type0_filter_type": "High Pass",
+      "order0_order": "24 dB/oct",
+      "lrmode0_lrmode": "Stereo",
+      "freq0_freq": 19.2,
+      "gain0_gain": 0.0,
+      "q0_q": 0.707
+     }
+    },
+    {
+     "id": "bass.compress",
+     "plugin": "ZL Compressor",
+     "settings": {
+      "compressor_style_compressor_style": "Clean",
+      "threshold_db_threshold_db": -27.1,
+      "ratio_ratio": 4.0,
+      "attack_attack": 3.0,
+      "release_release": 60.0,
+      "knee_width_knee_width": 6.0
+     }
+    }
+   ],
+   "fader_db": 0.0,
+   "pan": 0.0,
+   "out": "bass",
+   "sends": []
+  },
+  {
+   "name": "24_ElecGtr1",
+   "stem": "24_ElecGtr1.wav",
+   "class": "guitar",
+   "group": "gtr",
+   "sample": false,
+   "double": false,
+   "channels": 2,
+   "inserts": [
+    {
+     "id": "guitars.filters",
+     "plugin": "ZL Equalizer 2",
+     "settings": {
+      "filter_status0_filter_status": "On",
+      "filter_type0_filter_type": "High Pass",
+      "order0_order": "24 dB/oct",
+      "lrmode0_lrmode": "Stereo",
+      "freq0_freq": 60.0,
+      "gain0_gain": 0.0,
+      "q0_q": 0.707
+     }
+    }
+   ],
+   "fader_db": 0.0,
+   "pan": 0.0,
+   "out": "gtr",
+   "sends": []
+  },
+  {
+   "name": "25_ElecGtr1DT",
+   "stem": "25_ElecGtr1DT.wav",
+   "class": "guitar",
+   "group": "gtr",
+   "sample": false,
+   "double": true,
+   "channels": 2,
+   "inserts": [
+    {
+     "id": "guitars.filters",
+     "plugin": "ZL Equalizer 2",
+     "settings": {
+      "filter_status0_filter_status": "On",
+      "filter_type0_filter_type": "High Pass",
+      "order0_order": "24 dB/oct",
+      "lrmode0_lrmode": "Stereo",
+      "freq0_freq": 60.0,
+      "gain0_gain": 0.0,
+      "q0_q": 0.707
+     }
+    }
+   ],
+   "fader_db": 0.0,
+   "pan": 0.0,
+   "out": "gtr",
+   "sends": []
+  },
+  {
+   "name": "26_ElecGtr2",
+   "stem": "26_ElecGtr2.wav",
+   "class": "guitar",
+   "group": "gtr",
+   "sample": false,
+   "double": false,
+   "channels": 2,
+   "inserts": [
+    {
+     "id": "guitars.filters",
+     "plugin": "ZL Equalizer 2",
+     "settings": {
+      "filter_status0_filter_status": "On",
+      "filter_type0_filter_type": "High Pass",
+      "order0_order": "24 dB/oct",
+      "lrmode0_lrmode": "Stereo",
+      "freq0_freq": 60.0,
+      "gain0_gain": 0.0,
+      "q0_q": 0.707
+     }
+    }
+   ],
+   "fader_db": 0.0,
+   "pan": 0.0,
+   "out": "gtr",
+   "sends": []
+  },
+  {
+   "name": "27_ElecGtr3",
+   "stem": "27_ElecGtr3.wav",
+   "class": "guitar",
+   "group": "gtr",
+   "sample": false,
+   "double": false,
+   "channels": 1,
+   "inserts": [
+    {
+     "id": "guitars.filters",
+     "plugin": "ZL Equalizer 2",
+     "settings": {
+      "filter_status0_filter_status": "On",
+      "filter_type0_filter_type": "High Pass",
+      "order0_order": "24 dB/oct",
+      "lrmode0_lrmode": "Stereo",
+      "freq0_freq": 80.0,
+      "gain0_gain": 0.0,
+      "q0_q": 0.707
+     }
+    }
+   ],
+   "fader_db": 0.0,
+   "pan": 0.0,
+   "out": "gtr",
+   "sends": []
+  },
+  {
+   "name": "28_ElecGtr4",
+   "stem": "28_ElecGtr4.wav",
+   "class": "guitar",
+   "group": "gtr",
+   "sample": false,
+   "double": false,
+   "channels": 1,
+   "inserts": [
+    {
+     "id": "guitars.filters",
+     "plugin": "ZL Equalizer 2",
+     "settings": {
+      "filter_status0_filter_status": "On",
+      "filter_type0_filter_type": "High Pass",
+      "order0_order": "24 dB/oct",
+      "lrmode0_lrmode": "Stereo",
+      "freq0_freq": 80.0,
+      "gain0_gain": 0.0,
+      "q0_q": 0.707
+     }
+    }
+   ],
+   "fader_db": 0.0,
+   "pan": 0.0,
+   "out": "gtr",
+   "sends": []
+  },
+  {
+   "name": "29_ElecGtr5",
+   "stem": "29_ElecGtr5.wav",
+   "class": "guitar",
+   "group": "gtr",
+   "sample": false,
+   "double": false,
+   "channels": 2,
+   "inserts": [
+    {
+     "id": "guitars.filters",
+     "plugin": "ZL Equalizer 2",
+     "settings": {
+      "filter_status0_filter_status": "On",
+      "filter_type0_filter_type": "High Pass",
+      "order0_order": "24 dB/oct",
+      "lrmode0_lrmode": "Stereo",
+      "freq0_freq": 80.0,
+      "gain0_gain": 0.0,
+      "q0_q": 0.707
+     }
+    }
+   ],
+   "fader_db": 0.0,
+   "pan": 0.0,
+   "out": "gtr",
+   "sends": []
+  },
+  {
+   "name": "36_Synth02",
+   "stem": "36_Synth02.wav",
+   "class": "synth",
+   "group": "synths",
+   "sample": false,
+   "double": false,
+   "channels": 2,
+   "inserts": [
+    {
+     "id": "synths.hpf",
+     "plugin": "ZL Equalizer 2",
+     "settings": {
+      "filter_status0_filter_status": "On",
+      "filter_type0_filter_type": "High Pass",
+      "order0_order": "12 dB/oct",
+      "lrmode0_lrmode": "Stereo",
+      "freq0_freq": 80.0,
+      "gain0_gain": 0.0,
+      "q0_q": 0.707
+     }
+    }
+   ],
+   "fader_db": 0.0,
+   "pan": 0.0,
+   "out": "synths",
+   "sends": []
+  },
+  {
+   "name": "38_Synth04",
+   "stem": "38_Synth04.wav",
+   "class": "synth",
+   "group": "synths",
+   "sample": false,
+   "double": false,
+   "channels": 2,
+   "inserts": [
+    {
+     "id": "synths.hpf",
+     "plugin": "ZL Equalizer 2",
+     "settings": {
+      "filter_status0_filter_status": "On",
+      "filter_type0_filter_type": "High Pass",
+      "order0_order": "12 dB/oct",
+      "lrmode0_lrmode": "Stereo",
+      "freq0_freq": 150.0,
+      "gain0_gain": 0.0,
+      "q0_q": 0.707
+     }
+    }
+   ],
+   "fader_db": 0.0,
+   "pan": 0.0,
+   "out": "synths",
+   "sends": []
+  },
+  {
+   "name": "39_Synth05",
+   "stem": "39_Synth05.wav",
+   "class": "synth",
+   "group": "synths",
+   "sample": false,
+   "double": false,
+   "channels": 2,
+   "inserts": [
+    {
+     "id": "synths.hpf",
+     "plugin": "ZL Equalizer 2",
+     "settings": {
+      "filter_status0_filter_status": "On",
+      "filter_type0_filter_type": "High Pass",
+      "order0_order": "12 dB/oct",
+      "lrmode0_lrmode": "Stereo",
+      "freq0_freq": 80.0,
+      "gain0_gain": 0.0,
+      "q0_q": 0.707
+     }
+    }
+   ],
+   "fader_db": 0.0,
+   "pan": 0.0,
+   "out": "synths",
+   "sends": []
+  },
+  {
+   "name": "40_Synth06",
+   "stem": "40_Synth06.wav",
+   "class": "synth",
+   "group": "synths",
+   "sample": false,
+   "double": false,
+   "channels": 2,
+   "inserts": [
+    {
+     "id": "synths.hpf",
+     "plugin": "ZL Equalizer 2",
+     "settings": {
+      "filter_status0_filter_status": "On",
+      "filter_type0_filter_type": "High Pass",
+      "order0_order": "12 dB/oct",
+      "lrmode0_lrmode": "Stereo",
+      "freq0_freq": 150.0,
+      "gain0_gain": 0.0,
+      "q0_q": 0.707
+     }
+    }
+   ],
+   "fader_db": 0.0,
+   "pan": 0.0,
+   "out": "synths",
+   "sends": []
+  },
+  {
+   "name": "41_Synth07",
+   "stem": "41_Synth07.wav",
+   "class": "synth",
+   "group": "synths",
+   "sample": false,
+   "double": false,
+   "channels": 2,
+   "inserts": [
+    {
+     "id": "synths.hpf",
+     "plugin": "ZL Equalizer 2",
+     "settings": {
+      "filter_status0_filter_status": "On",
+      "filter_type0_filter_type": "High Pass",
+      "order0_order": "12 dB/oct",
+      "lrmode0_lrmode": "Stereo",
+      "freq0_freq": 80.0,
+      "gain0_gain": 0.0,
+      "q0_q": 0.707
+     }
+    }
+   ],
+   "fader_db": 0.0,
+   "pan": 0.0,
+   "out": "synths",
+   "sends": []
+  },
+  {
+   "name": "42_Synth08",
+   "stem": "42_Synth08.wav",
+   "class": "synth",
+   "group": "synths",
+   "sample": false,
+   "double": false,
+   "channels": 2,
+   "inserts": [],
+   "fader_db": 0.0,
+   "pan": 0.0,
+   "out": "synths",
+   "sends": []
+  },
+  {
+   "name": "43_Synth09",
+   "stem": "43_Synth09.wav",
+   "class": "synth",
+   "group": "synths",
+   "sample": false,
+   "double": false,
+   "channels": 2,
+   "inserts": [],
+   "fader_db": 0.0,
+   "pan": 0.0,
+   "out": "synths",
+   "sends": []
+  }
+ ],
+ "buses": [
+  {
+   "name": "kick",
+   "inserts": [
+    {
+     "id": "kick.weight",
+     "plugin": "PeakFilter",
+     "settings": {
+      "cutoff_frequency_hz": 51.1,
+      "gain_db": 2.0,
+      "q": 1.2
+     }
+    },
+    {
+     "id": "sub.cut",
+     "plugin": "LowShelfFilter",
+     "settings": {
+      "cutoff_frequency_hz": 45.0,
+      "gain_db": -6.0,
+      "q": 0.707
+     }
+    },
+    {
+     "id": "kick.click",
+     "plugin": "PeakFilter",
+     "settings": {
+      "cutoff_frequency_hz": 4000.0,
+      "gain_db": 4.0,
+      "q": 0.8
+     }
+    }
+   ],
+   "fader_db": 11.67,
+   "pan": 0,
+   "out": "drums",
+   "sends": []
+  },
+  {
+   "name": "snare",
+   "inserts": [
+    {
+     "id": "snare.ring-cut",
+     "plugin": "PeakFilter",
+     "settings": {
+      "cutoff_frequency_hz": 565.2,
+      "gain_db": -4.0,
+      "q": 4.0
+     }
+    }
+   ],
+   "fader_db": 16.01,
+   "pan": 0,
+   "out": "drums",
+   "sends": []
+  },
+  {
+   "name": "toms",
+   "inserts": [],
+   "fader_db": 6.0,
+   "pan": 0,
+   "out": "drums",
+   "sends": []
+  },
+  {
+   "name": "cymbals",
+   "inserts": [
+    {
+     "id": "air",
+     "plugin": "HighShelfFilter",
+     "settings": {
+      "cutoff_frequency_hz": 7000.0,
+      "gain_db": 6.0,
+      "q": 0.707
+     }
+    },
+    {
+     "id": "top",
+     "plugin": "HighShelfFilter",
+     "settings": {
+      "cutoff_frequency_hz": 12000.0,
+      "gain_db": 6.0,
+      "q": 0.707
+     }
+    }
+   ],
+   "fader_db": 6.97,
+   "pan": 0,
+   "out": "drums",
+   "sends": []
+  },
+  {
+   "name": "room",
+   "inserts": [],
+   "fader_db": 5.09,
+   "pan": 0,
+   "out": "drums",
+   "sends": []
+  },
+  {
+   "name": "drums",
+   "inserts": [],
+   "fader_db": 0.0,
+   "pan": 0,
+   "out": "mix",
+   "sends": []
+  },
+  {
+   "name": "bass",
+   "inserts": [
+    {
+     "id": "sub.cut",
+     "plugin": "LowShelfFilter",
+     "settings": {
+      "cutoff_frequency_hz": 45.0,
+      "gain_db": -8.0,
+      "q": 0.707
+     }
+    }
+   ],
+   "fader_db": 15.49,
+   "pan": 0,
+   "out": "mix",
+   "sends": []
+  },
+  {
+   "name": "gtr",
+   "inserts": [
+    {
+     "id": "lowmid.cut",
+     "plugin": "PeakFilter",
+     "settings": {
+      "cutoff_frequency_hz": 160.0,
+      "gain_db": -3.0,
+      "q": 1.4
+     }
+    },
+    {
+     "id": "presence",
+     "plugin": "PeakFilter",
+     "settings": {
+      "cutoff_frequency_hz": 3000.0,
+      "gain_db": 6.0,
+      "q": 0.7
+     }
+    }
+   ],
+   "fader_db": 0.0,
+   "pan": 0,
+   "out": "mix",
+   "sends": []
+  },
+  {
+   "name": "synths",
+   "inserts": [],
+   "fader_db": -0.65,
+   "pan": 0,
+   "out": "mix",
+   "sends": []
+  }
+ ],
+ "mix": {
+  "inserts": [
+   {
+    "id": "mix-bus.air",
+    "plugin": "HighShelfFilter",
+    "settings": {
+     "cutoff_frequency_hz": 7000.0,
+     "gain_db": 3.0,
+     "q": 0.707
+    }
+   },
+   {
+    "id": "mix-bus.top",
+    "plugin": "HighShelfFilter",
+    "settings": {
+     "cutoff_frequency_hz": 12000.0,
+     "gain_db": 1.15,
+     "q": 0.707
+    }
+   }
+  ]
+ },
+ "master": {
+  "inserts": [
+   {
+    "id": "master.drive",
+    "plugin": "Gain",
+    "settings": {
+     "gain_db": 1.2506
+    }
+   },
+   {
+    "id": "master.clip",
+    "plugin": "Clipping",
+    "settings": {
+     "threshold_db": -2.0
+    }
+   },
+   {
+    "id": "master.limit",
+    "plugin": "ZL Limiter",
+    "settings": {
+     "output_ceiling_output_ceiling": -1.3,
+     "true_peak_true_peak": true,
+     "oversampling_oversampling": "4x",
+     "lookahead_lookahead": 2.0,
+     "recovery_recovery": 10.0,
+     "attack_attack": 10.0,
+     "release_release": 50.0
+    }
+   }
+  ],
+  "target_lufs": -8.0
+ },
+ "decisions": [
+  {
+   "move": "stems.classify",
+   "target": "song",
+   "outcome": "kept",
+   "numbers": {
+    "stems": {
+     "01_Kick.wav": [
+      "kick",
+      "name"
+     ],
+     "02_SnareUp.wav": [
+      "snare",
+      "name"
+     ],
+     "03_SnareDown.wav": [
+      "snare",
+      "name"
+     ],
+     "05_Tom1.wav": [
+      "toms",
+      "name"
+     ],
+     "06_Tom2.wav": [
+      "toms",
+      "name"
+     ],
+     "07_Tom3.wav": [
+      "toms",
+      "name"
+     ],
+     "09_Overheads.wav": [
+      "overheads",
+      "name"
+     ],
+     "10_DrumsRoom.wav": [
+      "room",
+      "name"
+     ],
+     "11_Ride.wav": [
+      "ride",
+      "name"
+     ],
+     "12_Cymbal1.wav": [
+      "cymbal",
+      "name"
+     ],
+     "15_SFX1.wav": [
+      "synth",
+      "name"
+     ],
+     "16_SFX2.wav": [
+      "synth",
+      "name"
+     ],
+     "17_SFX3.wav": [
+      "synth",
+      "name"
+     ],
+     "18_SFX4.wav": [
+      "synth",
+      "name"
+     ],
+     "19_SFX5.wav": [
+      "synth",
+      "name"
+     ],
+     "23_Bass.wav": [
+      "bass",
+      "name"
+     ],
+     "24_ElecGtr1.wav": [
+      "guitar",
+      "name"
+     ],
+     "25_ElecGtr1DT.wav": [
+      "guitar",
+      "name"
+     ],
+     "26_ElecGtr2.wav": [
+      "guitar",
+      "name"
+     ],
+     "27_ElecGtr3.wav": [
+      "guitar",
+      "name"
+     ],
+     "28_ElecGtr4.wav": [
+      "guitar",
+      "name"
+     ],
+     "29_ElecGtr5.wav": [
+      "guitar",
+      "name"
+     ],
+     "36_Synth02.wav": [
+      "synth",
+      "name"
+     ],
+     "38_Synth04.wav": [
+      "synth",
+      "name"
+     ],
+     "39_Synth05.wav": [
+      "synth",
+      "name"
+     ],
+     "40_Synth06.wav": [
+      "synth",
+      "name"
+     ],
+     "41_Synth07.wav": [
+      "synth",
+      "name"
+     ],
+     "42_Synth08.wav": [
+      "synth",
+      "name"
+     ],
+     "43_Synth09.wav": [
+      "synth",
+      "name"
+     ]
+    },
+    "left_out": []
+   }
+  },
+  {
+   "move": "guitars.pan",
+   "target": "gtr",
+   "outcome": "kept",
+   "numbers": {
+    "pairs": [],
+    "envelope_correlation": {
+     "27_ElecGtr3+28_ElecGtr4": -0.86
+    },
+    "centred": [
+     "27_ElecGtr3",
+     "28_ElecGtr4"
+    ]
+   }
+  },
+  {
+   "move": "toms.pan",
+   "target": "toms",
+   "outcome": "kept",
+   "numbers": {
+    "pitch_hz": {
+     "05_Tom1": 156.12,
+     "06_Tom2": 118.43,
+     "07_Tom3": 64.6
+    },
+    "high_to_low": [
+     "05_Tom1",
+     "06_Tom2",
+     "07_Tom3"
+    ]
+   }
+  },
+  {
+   "move": "overheads.close-pan",
+   "target": "12_Cymbal1",
+   "outcome": "kept",
+   "numbers": {
+    "pan": 0.35
+   }
+  },
+  {
+   "move": "snare.align",
+   "target": "03_SnareDown",
+   "outcome": "dropped: as recorded is best",
+   "numbers": {
+    "invert": false,
+    "offset_samples": 0,
+    "sum_gain_db": {
+     "False/204": [
+      1.51,
+      0.06
+     ],
+     "False/0": [
+      1.67,
+      -0.08
+     ],
+     "True/204": [
+      -2.33,
+      -0.06
+     ],
+     "True/0": [
+      -2.75,
+      0.08
+     ]
+    }
+   }
+  },
+  {
+   "move": "song.full-band",
+   "target": "song",
+   "outcome": "measured",
+   "numbers": {
+    "seconds": 30.0,
+    "of": 30.0
+   }
+  },
+  {
+   "move": "snare.hpf-lpf",
+   "target": "02_SnareUp",
+   "outcome": "dropped: not needed",
+   "numbers": {
+    "below_db": -80.12,
+    "keep_db": -42.47,
+    "body_db": -42.47
+   }
+  },
+  {
+   "move": "snare.hpf-lpf",
+   "target": "03_SnareDown",
+   "outcome": "dropped: not needed",
+   "numbers": {
+    "below_db": -73.46,
+    "keep_db": -52.84,
+    "body_db": -52.84
+   }
+  },
+  {
+   "move": "toms.clean",
+   "target": "05_Tom1",
+   "outcome": "dropped: not needed",
+   "numbers": {
+    "bleed_db": -27.31,
+    "own_hits": 1,
+    "detected": 1
+   }
+  },
+  {
+   "move": "toms.clean",
+   "target": "06_Tom2",
+   "outcome": "dropped: not needed",
+   "numbers": {
+    "bleed_db": -33.37,
+    "own_hits": 1,
+    "detected": 1
+   }
+  },
+  {
+   "move": "toms.clean",
+   "target": "07_Tom3",
+   "outcome": "kept",
+   "numbers": {
+    "bleed_db": -21.47,
+    "own_hits": 4,
+    "detected": 4,
+    "tried": [
+     {
+      "settings": {
+       "segments": [
+        [
+         0.0,
+         7.9898,
+         -80
+        ],
+        [
+         9.1118,
+         14.9383,
+         -80
+        ],
+        [
+         16.9483,
+         19.2507,
+         -80
+        ],
+        [
+         21.2607,
+         30.0,
+         -80
+        ]
+       ],
+       "ramp_ms": 10
+      },
+      "level_change_min": 0.0,
+      "level_change_p50": 0.0,
+      "attack_change_p10": -0.0,
+      "attack_change_p50": 0.0,
+      "bleed_change": -2.15,
+      "kept": true
+     }
+    ]
+   },
+   "insert": "Ride"
+  },
+  {
+   "move": "overheads.hpf",
+   "target": "09_Overheads",
+   "outcome": "kept",
+   "numbers": {
+    "below_db": -53.03,
+    "keep_db": -42.66,
+    "cymbal_db": -42.66,
+    "tried": [
+     {
+      "settings": {
+       "filter_status0_filter_status": "On",
+       "filter_type0_filter_type": "High Pass",
+       "order0_order": "12 dB/oct",
+       "lrmode0_lrmode": "Stereo",
+       "freq0_freq": 150.0,
+       "gain0_gain": 0.0,
+       "q0_q": 0.707
+      },
+      "below_change": -6.45,
+      "keep_change": -0.0,
+      "kept": true
+     }
+    ]
+   },
+   "insert": "ZL Equalizer 2"
+  },
+  {
+   "move": "overheads.room-blend.lpf",
+   "target": "10_DrumsRoom",
+   "outcome": "kept",
+   "numbers": {
+    "above_6k_db": -51.79,
+    "total_db": -35.59,
+    "tried": [
+     {
+      "settings": {
+       "filter_status0_filter_status": "On",
+       "filter_type0_filter_type": "Low Pass",
+       "order0_order": "12 dB/oct",
+       "lrmode0_lrmode": "Stereo",
+       "freq0_freq": 7000.0,
+       "gain0_gain": 0.0,
+       "q0_q": 0.707
+      },
+      "above_6k_change": -3.61,
+      "kept": true
+     }
+    ]
+   },
+   "insert": "ZL Equalizer 2"
+  },
+  {
+   "move": "overheads.room-blend.cut",
+   "target": "10_DrumsRoom",
+   "outcome": "kept",
+   "numbers": {
+    "200_400_db": -39.45,
+    "80_160_db": -46.66,
+    "tried": [
+     {
+      "settings": {
+       "cutoff_frequency_hz": 300.0,
+       "gain_db": -4.0,
+       "q": 0.8
+      },
+      "band_change": -3.57,
+      "kept": true
+     }
+    ]
+   },
+   "insert": "PeakFilter"
+  },
+  {
+   "move": "overheads.room-blend.compress",
+   "target": "10_DrumsRoom",
+   "outcome": "kept",
+   "numbers": {
+    "hit_level_p50_db": -18.3,
+    "tried": [
+     {
+      "settings": {
+       "compressor_style_compressor_style": "Clean",
+       "threshold_db_threshold_db": -30.3,
+       "ratio_ratio": 8.0,
+       "attack_attack": 5.0,
+       "release_release": 40.0,
+       "knee_width_knee_width": 6.0
+      },
+      "tail_p50_db": 2.41,
+      "tail_before_db": 0.51,
+      "kept": true
+     }
+    ]
+   },
+   "insert": "ZL Compressor"
+  },
+  {
+   "move": "overheads.close-hpf",
+   "target": "11_Ride",
+   "outcome": "kept",
+   "numbers": {
+    "below_db": -74.31,
+    "keep_db": -60.52,
+    "tried": [
+     {
+      "settings": {
+       "filter_status0_filter_status": "On",
+       "filter_type0_filter_type": "High Pass",
+       "order0_order": "12 dB/oct",
+       "lrmode0_lrmode": "Stereo",
+       "freq0_freq": 400.0,
+       "gain0_gain": 0.0,
+       "q0_q": 0.707
+      },
+      "below_change": -8.29,
+      "keep_change": -0.0,
+      "kept": true
+     }
+    ]
+   },
+   "insert": "ZL Equalizer 2"
+  },
+  {
+   "move": "overheads.close-hpf",
+   "target": "12_Cymbal1",
+   "outcome": "kept",
+   "numbers": {
+    "below_db": -69.62,
+    "keep_db": -42.32,
+    "tried": [
+     {
+      "settings": {
+       "filter_status0_filter_status": "On",
+       "filter_type0_filter_type": "High Pass",
+       "order0_order": "12 dB/oct",
+       "lrmode0_lrmode": "Stereo",
+       "freq0_freq": 400.0,
+       "gain0_gain": 0.0,
+       "q0_q": 0.707
+      },
+      "below_change": -11.63,
+      "keep_change": -0.0,
+      "kept": true
+     }
+    ]
+   },
+   "insert": "ZL Equalizer 2"
+  },
+  {
+   "move": "synths.hpf",
+   "target": "15_SFX1",
+   "outcome": "kept",
+   "numbers": {
+    "below_db": -33.65,
+    "keep_db": -58.94,
+    "total_db": -33.26,
+    "main_band": [
+     125,
+     250
+    ],
+    "tried": [
+     {
+      "settings": {
+       "filter_status0_filter_status": "On",
+       "filter_type0_filter_type": "High Pass",
+       "order0_order": "12 dB/oct",
+       "lrmode0_lrmode": "Stereo",
+       "freq0_freq": 150.0,
+       "gain0_gain": 0.0,
+       "q0_q": 0.707
+      },
+      "below_change": -24.9,
+      "keep_change": -2.56,
+      "kept": false
+     },
+     {
+      "settings": {
+       "filter_status0_filter_status": "On",
+       "filter_type0_filter_type": "High Pass",
+       "order0_order": "12 dB/oct",
+       "lrmode0_lrmode": "Stereo",
+       "freq0_freq": 120.0,
+       "gain0_gain": 0.0,
+       "q0_q": 0.707
+      },
+      "below_change": -21.08,
+      "keep_change": -1.34,
+      "kept": false
+     },
+     {
+      "settings": {
+       "filter_status0_filter_status": "On",
+       "filter_type0_filter_type": "High Pass",
+       "order0_order": "12 dB/oct",
+       "lrmode0_lrmode": "Stereo",
+       "freq0_freq": 80.0,
+       "gain0_gain": 0.0,
+       "q0_q": 0.707
+      },
+      "below_change": -14.24,
+      "keep_change": -0.34,
+      "kept": true
+     }
+    ]
+   },
+   "insert": "ZL Equalizer 2"
+  },
+  {
+   "move": "synths.hpf",
+   "target": "16_SFX2",
+   "outcome": "kept",
+   "numbers": {
+    "below_db": -40.3,
+    "keep_db": -44.65,
+    "total_db": -34.67,
+    "main_band": [
+     125,
+     250
+    ],
+    "tried": [
+     {
+      "settings": {
+       "filter_status0_filter_status": "On",
+       "filter_type0_filter_type": "High Pass",
+       "order0_order": "12 dB/oct",
+       "lrmode0_lrmode": "Stereo",
+       "freq0_freq": 150.0,
+       "gain0_gain": 0.0,
+       "q0_q": 0.707
+      },
+      "below_change": -22.71,
+      "keep_change": -2.5,
+      "kept": false
+     },
+     {
+      "settings": {
+       "filter_status0_filter_status": "On",
+       "filter_type0_filter_type": "High Pass",
+       "order0_order": "12 dB/oct",
+       "lrmode0_lrmode": "Stereo",
+       "freq0_freq": 120.0,
+       "gain0_gain": 0.0,
+       "q0_q": 0.707
+      },
+      "below_change": -18.89,
+      "keep_change": -1.3,
+      "kept": false
+     },
+     {
+      "settings": {
+       "filter_status0_filter_status": "On",
+       "filter_type0_filter_type": "High Pass",
+       "order0_order": "12 dB/oct",
+       "lrmode0_lrmode": "Stereo",
+       "freq0_freq": 80.0,
+       "gain0_gain": 0.0,
+       "q0_q": 0.707
+      },
+      "below_change": -12.08,
+      "keep_change": -0.31,
+      "kept": true
+     }
+    ]
+   },
+   "insert": "ZL Equalizer 2"
+  },
+  {
+   "move": "synths.hpf",
+   "target": "17_SFX3",
+   "outcome": "kept",
+   "numbers": {
+    "below_db": -58.24,
+    "keep_db": -43.98,
+    "total_db": -36.1,
+    "main_band": [
+     125,
+     250
+    ],
+    "tried": [
+     {
+      "settings": {
+       "filter_status0_filter_status": "On",
+       "filter_type0_filter_type": "High Pass",
+       "order0_order": "12 dB/oct",
+       "lrmode0_lrmode": "Stereo",
+       "freq0_freq": 150.0,
+       "gain0_gain": 0.0,
+       "q0_q": 0.707
+      },
+      "below_change": -23.53,
+      "keep_change": -1.61,
+      "kept": false
+     },
+     {
+      "settings": {
+       "filter_status0_filter_status": "On",
+       "filter_type0_filter_type": "High Pass",
+       "order0_order": "12 dB/oct",
+       "lrmode0_lrmode": "Stereo",
+       "freq0_freq": 120.0,
+       "gain0_gain": 0.0,
+       "q0_q": 0.707
+      },
+      "below_change": -19.71,
+      "keep_change": -0.79,
+      "kept": true
+     }
+    ]
+   },
+   "insert": "ZL Equalizer 2"
+  },
+  {
+   "move": "synths.hpf",
+   "target": "18_SFX4",
+   "outcome": "kept",
+   "numbers": {
+    "below_db": -36.38,
+    "keep_db": -51.1,
+    "total_db": -31.03,
+    "main_band": [
+     125,
+     250
+    ],
+    "tried": [
+     {
+      "settings": {
+       "filter_status0_filter_status": "On",
+       "filter_type0_filter_type": "High Pass",
+       "order0_order": "12 dB/oct",
+       "lrmode0_lrmode": "Stereo",
+       "freq0_freq": 150.0,
+       "gain0_gain": 0.0,
+       "q0_q": 0.707
+      },
+      "below_change": -23.6,
+      "keep_change": -3.34,
+      "kept": false
+     },
+     {
+      "settings": {
+       "filter_status0_filter_status": "On",
+       "filter_type0_filter_type": "High Pass",
+       "order0_order": "12 dB/oct",
+       "lrmode0_lrmode": "Stereo",
+       "freq0_freq": 120.0,
+       "gain0_gain": 0.0,
+       "q0_q": 0.707
+      },
+      "below_change": -19.79,
+      "keep_change": -1.76,
+      "kept": false
+     },
+     {
+      "settings": {
+       "filter_status0_filter_status": "On",
+       "filter_type0_filter_type": "High Pass",
+       "order0_order": "12 dB/oct",
+       "lrmode0_lrmode": "Stereo",
+       "freq0_freq": 80.0,
+       "gain0_gain": 0.0,
+       "q0_q": 0.707
+      },
+      "below_change": -13.01,
+      "keep_change": -0.42,
+      "kept": true
+     }
+    ]
+   },
+   "insert": "ZL Equalizer 2"
+  },
+  {
+   "move": "synths.hpf",
+   "target": "19_SFX5",
+   "outcome": "kept",
+   "numbers": {
+    "below_db": -44.6,
+    "keep_db": -47.31,
+    "total_db": -36.73,
+    "main_band": [
+     125,
+     250
+    ],
+    "tried": [
+     {
+      "settings": {
+       "filter_status0_filter_status": "On",
+       "filter_type0_filter_type": "High Pass",
+       "order0_order": "12 dB/oct",
+       "lrmode0_lrmode": "Stereo",
+       "freq0_freq": 150.0,
+       "gain0_gain": 0.0,
+       "q0_q": 0.707
+      },
+      "below_change": -23.06,
+      "keep_change": -2.43,
+      "kept": false
+     },
+     {
+      "settings": {
+       "filter_status0_filter_status": "On",
+       "filter_type0_filter_type": "High Pass",
+       "order0_order": "12 dB/oct",
+       "lrmode0_lrmode": "Stereo",
+       "freq0_freq": 120.0,
+       "gain0_gain": 0.0,
+       "q0_q": 0.707
+      },
+      "below_change": -19.26,
+      "keep_change": -1.27,
+      "kept": false
+     },
+     {
+      "settings": {
+       "filter_status0_filter_status": "On",
+       "filter_type0_filter_type": "High Pass",
+       "order0_order": "12 dB/oct",
+       "lrmode0_lrmode": "Stereo",
+       "freq0_freq": 80.0,
+       "gain0_gain": 0.0,
+       "q0_q": 0.707
+      },
+      "below_change": -12.53,
+      "keep_change": -0.31,
+      "kept": true
+     }
+    ]
+   },
+   "insert": "ZL Equalizer 2"
+  },
+  {
+   "move": "bass.hpf",
+   "target": "23_Bass",
+   "outcome": "kept",
+   "numbers": {
+    "below_db": -44.31,
+    "keep_db": -35.17,
+    "lowest_f0_hz": 27.36,
+    "fundamental_db": -43.48,
+    "tried": [
+     {
+      "settings": {
+       "filter_status0_filter_status": "On",
+       "filter_type0_filter_type": "High Pass",
+       "order0_order": "24 dB/oct",
+       "lrmode0_lrmode": "Stereo",
+       "freq0_freq": 19.2,
+       "gain0_gain": 0.0,
+       "q0_q": 0.707
+      },
+      "below_change": -4.43,
+      "keep_change": -0.09,
+      "kept": true
+     }
+    ]
+   },
+   "insert": "ZL Equalizer 2"
+  },
+  {
+   "move": "bass.rides",
+   "target": "23_Bass",
+   "outcome": "dropped: compression evens the notes",
+   "numbers": {
+    "note_spread_db": 4.89,
+    "notes": 236,
+    "why": "single-note rides are not built; the two compressors are judged on the same spread"
+   }
+  },
+  {
+   "move": "bass.compress",
+   "target": "23_Bass",
+   "outcome": "kept",
+   "numbers": {
+    "note_spread_db": 4.64,
+    "note_level_p50_db": -19.11,
+    "tried": [
+     {
+      "settings": {
+       "compressor_style_compressor_style": "Clean",
+       "threshold_db_threshold_db": -27.1,
+       "ratio_ratio": 4.0,
+       "attack_attack": 3.0,
+       "release_release": 60.0,
+       "knee_width_knee_width": 6.0
+      },
+      "note_spread_db": 1.69,
+      "kept": true
+     }
+    ]
+   },
+   "insert": "ZL Compressor"
+  },
+  {
+   "move": "guitars.filters",
+   "target": "24_ElecGtr1",
+   "outcome": "kept",
+   "numbers": {
+    "80_120_db": -33.22,
+    "below_70_db": -38.18,
+    "highest_cutoff_holding_palm": 60,
+    "tried": [
+     {
+      "settings": {
+       "filter_status0_filter_status": "On",
+       "filter_type0_filter_type": "High Pass",
+       "order0_order": "24 dB/oct",
+       "lrmode0_lrmode": "Stereo",
+       "freq0_freq": 60.0,
+       "gain0_gain": 0.0,
+       "q0_q": 0.707
+      },
+      "palm_change": -0.13,
+      "below_70_change": -4.05,
+      "kept": true
+     }
+    ]
+   },
+   "insert": "ZL Equalizer 2"
+  },
+  {
+   "move": "guitars.resonance",
+   "target": "24_ElecGtr1",
+   "outcome": "dropped: not tried",
+   "numbers": {
+    "why": "needs a per-note check"
+   }
+  },
+  {
+   "move": "guitars.filters",
+   "target": "25_ElecGtr1DT",
+   "outcome": "kept",
+   "numbers": {
+    "80_120_db": -31.33,
+    "below_70_db": -38.1,
+    "highest_cutoff_holding_palm": 60,
+    "tried": [
+     {
+      "settings": {
+       "filter_status0_filter_status": "On",
+       "filter_type0_filter_type": "High Pass",
+       "order0_order": "24 dB/oct",
+       "lrmode0_lrmode": "Stereo",
+       "freq0_freq": 60.0,
+       "gain0_gain": 0.0,
+       "q0_q": 0.707
+      },
+      "palm_change": -0.14,
+      "below_70_change": -4.19,
+      "kept": true
+     }
+    ]
+   },
+   "insert": "ZL Equalizer 2"
+  },
+  {
+   "move": "guitars.resonance",
+   "target": "25_ElecGtr1DT",
+   "outcome": "dropped: not tried",
+   "numbers": {
+    "why": "needs a per-note check"
+   }
+  },
+  {
+   "move": "guitars.filters",
+   "target": "26_ElecGtr2",
+   "outcome": "kept",
+   "numbers": {
+    "80_120_db": -73.24,
+    "below_70_db": -71.22,
+    "highest_cutoff_holding_palm": 60,
+    "tried": [
+     {
+      "settings": {
+       "filter_status0_filter_status": "On",
+       "filter_type0_filter_type": "High Pass",
+       "order0_order": "24 dB/oct",
+       "lrmode0_lrmode": "Stereo",
+       "freq0_freq": 60.0,
+       "gain0_gain": 0.0,
+       "q0_q": 0.707
+      },
+      "palm_change": -0.15,
+      "below_70_change": -4.87,
+      "kept": true
+     }
+    ]
+   },
+   "insert": "ZL Equalizer 2"
+  },
+  {
+   "move": "guitars.resonance",
+   "target": "26_ElecGtr2",
+   "outcome": "dropped: not tried",
+   "numbers": {
+    "why": "needs a per-note check"
+   }
+  },
+  {
+   "move": "guitars.filters",
+   "target": "27_ElecGtr3",
+   "outcome": "kept",
+   "numbers": {
+    "80_120_db": -105.41,
+    "below_70_db": -99.84,
+    "highest_cutoff_holding_palm": 80,
+    "tried": [
+     {
+      "settings": {
+       "filter_status0_filter_status": "On",
+       "filter_type0_filter_type": "High Pass",
+       "order0_order": "24 dB/oct",
+       "lrmode0_lrmode": "Stereo",
+       "freq0_freq": 80.0,
+       "gain0_gain": 0.0,
+       "q0_q": 0.707
+      },
+      "palm_change": -0.67,
+      "below_70_change": -9.63,
+      "kept": true
+     }
+    ]
+   },
+   "insert": "ZL Equalizer 2"
+  },
+  {
+   "move": "guitars.resonance",
+   "target": "27_ElecGtr3",
+   "outcome": "dropped: not tried",
+   "numbers": {
+    "why": "needs a per-note check"
+   }
+  },
+  {
+   "move": "guitars.filters",
+   "target": "28_ElecGtr4",
+   "outcome": "kept",
+   "numbers": {
+    "80_120_db": -74.64,
+    "below_70_db": -74.75,
+    "highest_cutoff_holding_palm": 80,
+    "tried": [
+     {
+      "settings": {
+       "filter_status0_filter_status": "On",
+       "filter_type0_filter_type": "High Pass",
+       "order0_order": "24 dB/oct",
+       "lrmode0_lrmode": "Stereo",
+       "freq0_freq": 80.0,
+       "gain0_gain": 0.0,
+       "q0_q": 0.707
+      },
+      "palm_change": -0.82,
+      "below_70_change": -13.1,
+      "kept": true
+     }
+    ]
+   },
+   "insert": "ZL Equalizer 2"
+  },
+  {
+   "move": "guitars.resonance",
+   "target": "28_ElecGtr4",
+   "outcome": "dropped: not tried",
+   "numbers": {
+    "why": "needs a per-note check"
+   }
+  },
+  {
+   "move": "guitars.filters",
+   "target": "29_ElecGtr5",
+   "outcome": "kept",
+   "numbers": {
+    "80_120_db": -60.25,
+    "below_70_db": -70.4,
+    "highest_cutoff_holding_palm": 80,
+    "tried": [
+     {
+      "settings": {
+       "filter_status0_filter_status": "On",
+       "filter_type0_filter_type": "High Pass",
+       "order0_order": "24 dB/oct",
+       "lrmode0_lrmode": "Stereo",
+       "freq0_freq": 80.0,
+       "gain0_gain": 0.0,
+       "q0_q": 0.707
+      },
+      "palm_change": -0.66,
+      "below_70_change": -8.48,
+      "kept": true
+     }
+    ]
+   },
+   "insert": "ZL Equalizer 2"
+  },
+  {
+   "move": "guitars.resonance",
+   "target": "29_ElecGtr5",
+   "outcome": "dropped: not tried",
+   "numbers": {
+    "why": "needs a per-note check"
+   }
+  },
+  {
+   "move": "synths.hpf",
+   "target": "36_Synth02",
+   "outcome": "kept",
+   "numbers": {
+    "below_db": -76.65,
+    "keep_db": -36.07,
+    "total_db": -31.98,
+    "main_band": [
+     125,
+     250
+    ],
+    "tried": [
+     {
+      "settings": {
+       "filter_status0_filter_status": "On",
+       "filter_type0_filter_type": "High Pass",
+       "order0_order": "12 dB/oct",
+       "lrmode0_lrmode": "Stereo",
+       "freq0_freq": 150.0,
+       "gain0_gain": 0.0,
+       "q0_q": 0.707
+      },
+      "below_change": -23.72,
+      "keep_change": -2.97,
+      "kept": false
+     },
+     {
+      "settings": {
+       "filter_status0_filter_status": "On",
+       "filter_type0_filter_type": "High Pass",
+       "order0_order": "12 dB/oct",
+       "lrmode0_lrmode": "Stereo",
+       "freq0_freq": 120.0,
+       "gain0_gain": 0.0,
+       "q0_q": 0.707
+      },
+      "below_change": -19.93,
+      "keep_change": -1.55,
+      "kept": false
+     },
+     {
+      "settings": {
+       "filter_status0_filter_status": "On",
+       "filter_type0_filter_type": "High Pass",
+       "order0_order": "12 dB/oct",
+       "lrmode0_lrmode": "Stereo",
+       "freq0_freq": 80.0,
+       "gain0_gain": 0.0,
+       "q0_q": 0.707
+      },
+      "below_change": -13.18,
+      "keep_change": -0.38,
+      "kept": true
+     }
+    ]
+   },
+   "insert": "ZL Equalizer 2"
+  },
+  {
+   "move": "synths.hpf",
+   "target": "38_Synth04",
+   "outcome": "kept",
+   "numbers": {
+    "below_db": -68.95,
+    "keep_db": -56.2,
+    "total_db": -39.02,
+    "main_band": [
+     125,
+     250
+    ],
+    "tried": [
+     {
+      "settings": {
+       "filter_status0_filter_status": "On",
+       "filter_type0_filter_type": "High Pass",
+       "order0_order": "12 dB/oct",
+       "lrmode0_lrmode": "Stereo",
+       "freq0_freq": 150.0,
+       "gain0_gain": 0.0,
+       "q0_q": 0.707
+      },
+      "below_change": -24.55,
+      "keep_change": -0.61,
+      "kept": true
+     }
+    ]
+   },
+   "insert": "ZL Equalizer 2"
+  },
+  {
+   "move": "synths.hpf",
+   "target": "39_Synth05",
+   "outcome": "kept",
+   "numbers": {
+    "below_db": -74.54,
+    "keep_db": -45.68,
+    "total_db": -42.39,
+    "main_band": [
+     125,
+     250
+    ],
+    "tried": [
+     {
+      "settings": {
+       "filter_status0_filter_status": "On",
+       "filter_type0_filter_type": "High Pass",
+       "order0_order": "12 dB/oct",
+       "lrmode0_lrmode": "Stereo",
+       "freq0_freq": 150.0,
+       "gain0_gain": 0.0,
+       "q0_q": 0.707
+      },
+      "below_change": -25.16,
+      "keep_change": -2.14,
+      "kept": false
+     },
+     {
+      "settings": {
+       "filter_status0_filter_status": "On",
+       "filter_type0_filter_type": "High Pass",
+       "order0_order": "12 dB/oct",
+       "lrmode0_lrmode": "Stereo",
+       "freq0_freq": 120.0,
+       "gain0_gain": 0.0,
+       "q0_q": 0.707
+      },
+      "below_change": -21.36,
+      "keep_change": -1.02,
+      "kept": false
+     },
+     {
+      "settings": {
+       "filter_status0_filter_status": "On",
+       "filter_type0_filter_type": "High Pass",
+       "order0_order": "12 dB/oct",
+       "lrmode0_lrmode": "Stereo",
+       "freq0_freq": 80.0,
+       "gain0_gain": 0.0,
+       "q0_q": 0.707
+      },
+      "below_change": -14.59,
+      "keep_change": -0.22,
+      "kept": true
+     }
+    ]
+   },
+   "insert": "ZL Equalizer 2"
+  },
+  {
+   "move": "synths.hpf",
+   "target": "40_Synth06",
+   "outcome": "kept",
+   "numbers": {
+    "below_db": -84.55,
+    "keep_db": -69.61,
+    "total_db": -51.62,
+    "main_band": [
+     250,
+     500
+    ],
+    "tried": [
+     {
+      "settings": {
+       "filter_status0_filter_status": "On",
+       "filter_type0_filter_type": "High Pass",
+       "order0_order": "12 dB/oct",
+       "lrmode0_lrmode": "Stereo",
+       "freq0_freq": 150.0,
+       "gain0_gain": 0.0,
+       "q0_q": 0.707
+      },
+      "below_change": -24.67,
+      "keep_change": -0.17,
+      "kept": true
+     }
+    ]
+   },
+   "insert": "ZL Equalizer 2"
+  },
+  {
+   "move": "synths.hpf",
+   "target": "41_Synth07",
+   "outcome": "kept",
+   "numbers": {
+    "below_db": -70.6,
+    "keep_db": -41.89,
+    "total_db": -39.19,
+    "main_band": [
+     125,
+     250
+    ],
+    "tried": [
+     {
+      "settings": {
+       "filter_status0_filter_status": "On",
+       "filter_type0_filter_type": "High Pass",
+       "order0_order": "12 dB/oct",
+       "lrmode0_lrmode": "Stereo",
+       "freq0_freq": 150.0,
+       "gain0_gain": 0.0,
+       "q0_q": 0.707
+      },
+      "below_change": -26.27,
+      "keep_change": -2.23,
+      "kept": false
+     },
+     {
+      "settings": {
+       "filter_status0_filter_status": "On",
+       "filter_type0_filter_type": "High Pass",
+       "order0_order": "12 dB/oct",
+       "lrmode0_lrmode": "Stereo",
+       "freq0_freq": 120.0,
+       "gain0_gain": 0.0,
+       "q0_q": 0.707
+      },
+      "below_change": -22.46,
+      "keep_change": -1.07,
+      "kept": false
+     },
+     {
+      "settings": {
+       "filter_status0_filter_status": "On",
+       "filter_type0_filter_type": "High Pass",
+       "order0_order": "12 dB/oct",
+       "lrmode0_lrmode": "Stereo",
+       "freq0_freq": 80.0,
+       "gain0_gain": 0.0,
+       "q0_q": 0.707
+      },
+      "below_change": -15.66,
+      "keep_change": -0.23,
+      "kept": true
+     }
+    ]
+   },
+   "insert": "ZL Equalizer 2"
+  },
+  {
+   "move": "synths.hpf",
+   "target": "42_Synth08",
+   "outcome": "dropped: not needed",
+   "numbers": {
+    "below_db": -110.17,
+    "keep_db": -48.32,
+    "total_db": -47.84,
+    "main_band": [
+     250,
+     500
+    ]
+   }
+  },
+  {
+   "move": "synths.hpf",
+   "target": "43_Synth09",
+   "outcome": "dropped: not needed",
+   "numbers": {
+    "below_db": -88.4,
+    "keep_db": -43.63,
+    "total_db": -43.46,
+    "main_band": [
+     125,
+     250
+    ]
+   }
+  },
+  {
+   "move": "snare.blend",
+   "target": "snare",
+   "outcome": "kept",
+   "numbers": {
+    "mics": [
+     "02_SnareUp",
+     "03_SnareDown"
+    ],
+    "chosen": [
+     0.0,
+     -12.0
+    ],
+    "tried": [
+     {
+      "faders": [
+       0.0,
+       null
+      ],
+      "body": 41.66,
+      "crack": 35.62,
+      "ok": true
+     },
+     {
+      "faders": [
+       0.0,
+       0.0
+      ],
+      "body": 42.42,
+      "crack": 33.85,
+      "ok": false
+     },
+     {
+      "faders": [
+       0.0,
+       -4.0
+      ],
+      "body": 42.06,
+      "crack": 34.83,
+      "ok": true
+     },
+     {
+      "faders": [
+       0.0,
+       -8.0
+      ],
+      "body": 41.89,
+      "crack": 35.23,
+      "ok": true
+     },
+     {
+      "faders": [
+       0.0,
+       -12.0
+      ],
+      "body": 41.87,
+      "crack": 35.44,
+      "ok": true
+     },
+     {
+      "faders": [
+       0.0,
+       null
+      ],
+      "body": 41.66,
+      "crack": 35.62,
+      "ok": true
+     }
+    ]
+   }
+  },
+  {
+   "move": "overheads.close-blend",
+   "target": "12_Cymbal1",
+   "outcome": "kept",
+   "numbers": {
+    "close_lufs": -23.74,
+    "oh_lufs": -28.55,
+    "fader_db": -12.81
+   }
+  },
+  {
+   "move": "kick.tail",
+   "target": "kick",
+   "outcome": "dropped: not needed",
+   "numbers": {
+    "kick_tail_db": -29.81,
+    "target_db": -14.0
+   }
+  },
+  {
+   "move": "kick.weight",
+   "target": "kick",
+   "outcome": "kept",
+   "numbers": {
+    "peak_hz": 51.14,
+    "tried": [
+     {
+      "settings": {
+       "cutoff_frequency_hz": 51.1,
+       "gain_db": 2.0,
+       "q": 1.2
+      },
+      "low_minus_mud_change": 1.4,
+      "kept": true
+     }
+    ]
+   },
+   "insert": "PeakFilter"
+  },
+  {
+   "move": "kick.mud-cut",
+   "target": "kick",
+   "outcome": "dropped: not needed",
+   "numbers": {
+    "200_400_db": -59.5,
+    "50_100_db": -37.46
+   }
+  },
+  {
+   "move": "snare.ring-cut",
+   "target": "snare",
+   "outcome": "kept",
+   "numbers": {
+    "peak_hz": 565.25,
+    "rise_db": 8.6,
+    "tried": [
+     {
+      "settings": {
+       "cutoff_frequency_hz": 565.2,
+       "gain_db": -4.0,
+       "q": 4.0
+      },
+      "band_change": -3.62,
+      "keep_change": -0.06,
+      "kept": true
+     }
+    ]
+   },
+   "insert": "PeakFilter"
+  },
+  {
+   "move": "balance.fader",
+   "target": "kick",
+   "outcome": "kept",
+   "numbers": {
+    "bus_lufs": -30.2,
+    "reference": "gtr",
+    "reference_lufs": -13.53,
+    "target_lu": -4.0,
+    "fader_db": 12.67
+   }
+  },
+  {
+   "move": "balance.fader",
+   "target": "snare",
+   "outcome": "kept",
+   "numbers": {
+    "bus_lufs": -29.54,
+    "reference": "gtr",
+    "reference_lufs": -13.53,
+    "target_lu": -4.0,
+    "fader_db": 12.01
+   }
+  },
+  {
+   "move": "balance.fader",
+   "target": "bass",
+   "outcome": "kept",
+   "numbers": {
+    "bus_lufs": -32.02,
+    "reference": "gtr",
+    "reference_lufs": -13.53,
+    "target_lu": -3.0,
+    "fader_db": 15.49
+   }
+  },
+  {
+   "move": "balance.fader",
+   "target": "cymbals",
+   "outcome": "kept",
+   "numbers": {
+    "bus_lufs": -29.51,
+    "reference": "gtr",
+    "reference_lufs": -13.53,
+    "target_lu": -9.0,
+    "fader_db": 6.97
+   }
+  },
+  {
+   "move": "balance.fader",
+   "target": "room",
+   "outcome": "kept",
+   "numbers": {
+    "bus_lufs": -31.62,
+    "reference": "gtr",
+    "reference_lufs": -13.53,
+    "target_lu": -13.0,
+    "fader_db": 5.09
+   }
+  },
+  {
+   "move": "balance.fader",
+   "target": "synths",
+   "outcome": "kept",
+   "numbers": {
+    "bus_lufs": -19.89,
+    "reference": "gtr",
+    "reference_lufs": -13.53,
+    "target_lu": -7.0,
+    "fader_db": -0.65
+   }
+  },
+  {
+   "move": "balance.fader",
+   "target": "toms",
+   "outcome": "kept",
+   "numbers": {
+    "toms_lufs_in_fills": -25.09,
+    "reference_lufs_in_fills": -12.45,
+    "fader_db": 6.0
+   }
+  },
+  {
+   "move": "balance.punch",
+   "target": "kick",
+   "outcome": "dropped: on target",
+   "numbers": {
+    "target_db": 12.5,
+    "tried": [
+     {
+      "step_db": 0,
+      "kick_low": 12.52
+     },
+     {
+      "step_db": 1,
+      "kick_low": 13.51
+     },
+     {
+      "step_db": 2,
+      "kick_low": 14.37
+     },
+     {
+      "step_db": 3,
+      "kick_low": 15.36
+     },
+     {
+      "step_db": 4,
+      "kick_low": 16.25
+     },
+     {
+      "step_db": 5,
+      "kick_low": 17.23
+     },
+     {
+      "step_db": 6,
+      "kick_low": 18.19
+     },
+     {
+      "step_db": 7,
+      "kick_low": 19.2
+     },
+     {
+      "step_db": 8,
+      "kick_low": 20.27
+     },
+     {
+      "step_db": -1,
+      "kick_low": 11.66
+     },
+     {
+      "step_db": -2,
+      "kick_low": 10.62
+     },
+     {
+      "step_db": -3,
+      "kick_low": 9.63
+     },
+     {
+      "step_db": -4,
+      "kick_low": 8.87
+     },
+     {
+      "step_db": -5,
+      "kick_low": 8.02
+     },
+     {
+      "step_db": -6,
+      "kick_low": 7.4
+     }
+    ],
+    "fader_db": 12.67
+   }
+  },
+  {
+   "move": "balance.punch",
+   "target": "snare",
+   "outcome": "kept",
+   "numbers": {
+    "target_db": 14.0,
+    "tried": [
+     {
+      "step_db": 0,
+      "snare_body": 10.68
+     },
+     {
+      "step_db": 1,
+      "snare_body": 11.58
+     },
+     {
+      "step_db": 2,
+      "snare_body": 12.57
+     },
+     {
+      "step_db": 3,
+      "snare_body": 13.6
+     },
+     {
+      "step_db": 4,
+      "snare_body": 14.48
+     },
+     {
+      "step_db": 5,
+      "snare_body": 15.53
+     },
+     {
+      "step_db": 6,
+      "snare_body": 16.61
+     },
+     {
+      "step_db": 7,
+      "snare_body": 17.55
+     },
+     {
+      "step_db": 8,
+      "snare_body": 18.71
+     },
+     {
+      "step_db": 9,
+      "snare_body": 19.77
+     },
+     {
+      "step_db": -1,
+      "snare_body": 9.82
+     },
+     {
+      "step_db": -2,
+      "snare_body": 9.1
+     },
+     {
+      "step_db": -3,
+      "snare_body": 8.16
+     },
+     {
+      "step_db": -4,
+      "snare_body": 7.31
+     },
+     {
+      "step_db": -5,
+      "snare_body": 6.69
+     },
+     {
+      "step_db": -6,
+      "snare_body": 6.19
+     }
+    ],
+    "fader_db": 15.01
+   }
+  },
+  {
+   "move": "kick.duck-bass",
+   "target": "bass",
+   "outcome": "dropped: not needed",
+   "numbers": {
+    "kick_low": 12.51,
+    "rule_db": 12.5
+   }
+  },
+  {
+   "move": "kick.duck-gtr",
+   "target": "gtr",
+   "outcome": "dropped: not needed",
+   "numbers": {
+    "kick_low": 12.51,
+    "rule_db": 12.5
+   }
+  },
+  {
+   "move": "lowmid.cut",
+   "target": "gtr",
+   "outcome": "kept",
+   "numbers": {
+    "thirds_db": {
+     "63": -23.15,
+     "125": -23.76,
+     "160": -22.89,
+     "200": -25.67,
+     "500": -30.92
+    },
+    "buildup_db": 4.15,
+    "trigger_db": 2.5,
+    "peak_hz": 160,
+    "owner_db": {
+     "kick": -39.23,
+     "snare": -40.42,
+     "toms": -39.1,
+     "cymbals": -45.87,
+     "room": -44.76,
+     "bass": -31.2,
+     "gtr": -24.3,
+     "synths": -34.76
+    },
+    "owner": "gtr",
+    "tried": [
+     {
+      "gain_db": -2.0,
+      "buildup_db": 2.91,
+      "owner_100hz_change": -0.8,
+      "ok": true
+     },
+     {
+      "gain_db": -3.0,
+      "buildup_db": 2.5,
+      "owner_100hz_change": -1.2,
+      "ok": true
+     },
+     {
+      "gain_db": -4.5,
+      "buildup_db": 2.2,
+      "owner_100hz_change": -1.8,
+      "ok": false
+     },
+     {
+      "gain_db": -6.0,
+      "buildup_db": 1.96,
+      "owner_100hz_change": -2.4,
+      "ok": false
+     }
+    ]
+   }
+  },
+  {
+   "move": "sub.cut",
+   "target": "kick",
+   "outcome": "kept",
+   "numbers": {
+    "sub_tilt_db": -2.21,
+    "rule_db": -4.0,
+    "tried": [
+     {
+      "gain_db": -2.0,
+      "sub_tilt_db": -3.21,
+      "body_change_db": -0.26,
+      "ok": true
+     },
+     {
+      "gain_db": -4.0,
+      "sub_tilt_db": -4.21,
+      "body_change_db": -0.51,
+      "ok": true
+     },
+     {
+      "gain_db": -6.0,
+      "sub_tilt_db": -5.16,
+      "body_change_db": -0.78,
+      "ok": true
+     },
+     {
+      "gain_db": -8.0,
+      "sub_tilt_db": -6.07,
+      "body_change_db": -1.07,
+      "ok": false
+     }
+    ]
+   }
+  },
+  {
+   "move": "sub.cut",
+   "target": "bass",
+   "outcome": "kept",
+   "numbers": {
+    "sub_tilt_db": -1.56,
+    "rule_db": -4.0,
+    "tried": [
+     {
+      "gain_db": -2.0,
+      "sub_tilt_db": -2.62,
+      "body_change_db": -0.21,
+      "ok": true
+     },
+     {
+      "gain_db": -4.0,
+      "sub_tilt_db": -3.69,
+      "body_change_db": -0.42,
+      "ok": true
+     },
+     {
+      "gain_db": -6.0,
+      "sub_tilt_db": -4.72,
+      "body_change_db": -0.64,
+      "ok": true
+     },
+     {
+      "gain_db": -8.0,
+      "sub_tilt_db": -5.7,
+      "body_change_db": -0.88,
+      "ok": true
+     },
+     {
+      "gain_db": -10.0,
+      "sub_tilt_db": -6.64,
+      "body_change_db": -1.16,
+      "ok": false
+     }
+    ]
+   }
+  },
+  {
+   "move": "presence",
+   "target": "gtr",
+   "outcome": "kept",
+   "numbers": {
+    "tilt_db": -5.68,
+    "rule_db": -2.0,
+    "bands": [
+     [
+      2000,
+      4000
+     ],
+     [
+      125,
+      250
+     ]
+    ],
+    "owner_db": {
+     "cymbals": -38.71,
+     "room": -42.77,
+     "bass": -48.99,
+     "gtr": -30.61,
+     "synths": -46.5
+    },
+    "tried": [
+     {
+      "gain_db": 1.5,
+      "tilt_db": -4.76,
+      "ok": true
+     },
+     {
+      "gain_db": 3.0,
+      "tilt_db": -3.75,
+      "ok": true
+     },
+     {
+      "gain_db": 4.5,
+      "tilt_db": -2.65,
+      "ok": true
+     },
+     {
+      "gain_db": 6.0,
+      "tilt_db": -1.5,
+      "ok": true
+     }
+    ]
+   }
+  },
+  {
+   "move": "presence",
+   "target": "mix",
+   "outcome": "dropped: not needed",
+   "numbers": {
+    "tilt_db": -1.5,
+    "rule_db": -2.0,
+    "bands": [
+     [
+      2000,
+      4000
+     ],
+     [
+      125,
+      250
+     ]
+    ]
+   }
+  },
+  {
+   "move": "overheads.brightness",
+   "target": "cymbals",
+   "outcome": "measured",
+   "numbers": {
+    "air_db": -6.66,
+    "reference_db": -4.3
+   }
+  },
+  {
+   "move": "air",
+   "target": "cymbals",
+   "outcome": "kept",
+   "numbers": {
+    "tilt_db": -18.42,
+    "rule_db": -8.13864458132495,
+    "bands": [
+     [
+      8000,
+      16000
+     ],
+     [
+      1000,
+      4000
+     ]
+    ],
+    "owner_db": {
+     "cymbals": -43.9,
+     "room": -59.0,
+     "bass": -67.09,
+     "gtr": -69.47,
+     "synths": -55.48
+    },
+    "tried": [
+     {
+      "gain_db": 2.0,
+      "tilt_db": -17.5,
+      "ok": true
+     },
+     {
+      "gain_db": 4.0,
+      "tilt_db": -16.44,
+      "ok": true
+     },
+     {
+      "gain_db": 6.0,
+      "tilt_db": -15.26,
+      "ok": true
+     }
+    ]
+   }
+  },
+  {
+   "move": "air",
+   "target": "synths",
+   "outcome": "dropped: did not work",
+   "numbers": {
+    "tilt_db": -18.42,
+    "rule_db": -8.13864458132495,
+    "bands": [
+     [
+      8000,
+      16000
+     ],
+     [
+      1000,
+      4000
+     ]
+    ],
+    "owner_db": {
+     "cymbals": -43.9,
+     "room": -59.0,
+     "bass": -67.09,
+     "gtr": -69.47,
+     "synths": -55.48
+    },
+    "tried": [
+     {
+      "gain_db": 2.0,
+      "tilt_db": -15.22,
+      "ok": false
+     },
+     {
+      "gain_db": 4.0,
+      "tilt_db": -15.16,
+      "ok": false
+     },
+     {
+      "gain_db": 6.0,
+      "tilt_db": -15.08,
+      "ok": false
+     }
+    ]
+   }
+  },
+  {
+   "move": "mix-bus.air",
+   "target": "mix",
+   "outcome": "kept",
+   "numbers": {
+    "rest_db": 7.12,
+    "gain_db": 3.0
+   }
+  },
+  {
+   "move": "top",
+   "target": "cymbals",
+   "outcome": "kept",
+   "numbers": {
+    "tilt_db": -11.44,
+    "rule_db": -7.93864458132495,
+    "bands": [
+     [
+      11300,
+      16000
+     ],
+     [
+      5600,
+      11300
+     ]
+    ],
+    "owner_db": {
+     "cymbals": -48.01,
+     "room": -72.86,
+     "bass": -80.06,
+     "gtr": -79.86,
+     "synths": -59.45
+    },
+    "tried": [
+     {
+      "gain_db": 2.0,
+      "tilt_db": -10.7,
+      "ok": true
+     },
+     {
+      "gain_db": 4.0,
+      "tilt_db": -9.91,
+      "ok": true
+     },
+     {
+      "gain_db": 6.0,
+      "tilt_db": -9.09,
+      "ok": true
+     }
+    ]
+   }
+  },
+  {
+   "move": "top",
+   "target": "synths",
+   "outcome": "dropped: did not work",
+   "numbers": {
+    "tilt_db": -11.44,
+    "rule_db": -7.93864458132495,
+    "bands": [
+     [
+      11300,
+      16000
+     ],
+     [
+      5600,
+      11300
+     ]
+    ],
+    "owner_db": {
+     "cymbals": -48.01,
+     "room": -72.86,
+     "bass": -80.06,
+     "gtr": -79.86,
+     "synths": -59.45
+    },
+    "tried": [
+     {
+      "gain_db": 2.0,
+      "tilt_db": -9.05,
+      "ok": false
+     },
+     {
+      "gain_db": 4.0,
+      "tilt_db": -8.99,
+      "ok": false
+     },
+     {
+      "gain_db": 6.0,
+      "tilt_db": -8.91,
+      "ok": false
+     }
+    ]
+   }
+  },
+  {
+   "move": "mix-bus.top",
+   "target": "mix",
+   "outcome": "kept",
+   "numbers": {
+    "rest_db": 1.15,
+    "gain_db": 1.15
+   }
+  },
+  {
+   "move": "guitars.lead-space",
+   "target": "gtr",
+   "outcome": "dropped: did not work",
+   "numbers": {
+    "centred": [
+     "28_ElecGtr4"
+    ],
+    "side_mid_db": -3.18,
+    "tried": [
+     {
+      "send_db": -16.0,
+      "side_mid_change_db": 0.04,
+      "band_change_db": -0.0,
+      "ok": false
+     },
+     {
+      "send_db": -12.0,
+      "side_mid_change_db": 0.08,
+      "band_change_db": 0.01,
+      "ok": false
+     },
+     {
+      "send_db": -8.0,
+      "side_mid_change_db": 0.15,
+      "band_change_db": 0.05,
+      "ok": false
+     },
+     {
+      "send_db": -4.0,
+      "side_mid_change_db": 0.29,
+      "band_change_db": 0.15,
+      "ok": false
+     }
+    ]
+   }
+  },
+  {
+   "move": "kick.click",
+   "target": "kick",
+   "outcome": "kept",
+   "numbers": {
+    "kick_click": 3.61,
+    "rule_db": 5.0,
+    "tried": [
+     {
+      "gain_db": 2.0,
+      "kick_click": 4.54,
+      "ok": true
+     },
+     {
+      "gain_db": 4.0,
+      "kick_click": 5.67,
+      "ok": true
+     }
+    ]
+   }
+  },
+  {
+   "move": "snare.crack",
+   "target": "snare",
+   "outcome": "dropped: not needed",
+   "numbers": {
+    "snare_crack": 7.31,
+    "rule_db": 7.0
+   }
+  },
+  {
+   "move": "drum-bus.glue",
+   "target": "drums",
+   "outcome": "dropped: punch did not hold",
+   "numbers": {
+    "before": {
+     "kick_low": 12.37,
+     "kick_tail": -10.87,
+     "kick_click": 5.67,
+     "snare_body": 14.55,
+     "snare_crack": 7.31
+    },
+    "tried": [
+     {
+      "settings": {
+       "compressor_style_compressor_style": "Clean",
+       "threshold_db_threshold_db": -3.8,
+       "ratio_ratio": 4.0,
+       "attack_attack": 10.0,
+       "release_release": 100.0,
+       "knee_width_knee_width": 6.0
+      },
+      "kick_low": 11.54,
+      "kick_tail": -9.87,
+      "kick_click": 5.36,
+      "snare_body": 12.52,
+      "snare_crack": 6.35,
+      "loudness_drop_db": 0.85,
+      "kept": false
+     },
+     {
+      "settings": {
+       "compressor_style_compressor_style": "Clean",
+       "threshold_db_threshold_db": -6.8,
+       "ratio_ratio": 4.0,
+       "attack_attack": 10.0,
+       "release_release": 100.0,
+       "knee_width_knee_width": 6.0
+      },
+      "kick_low": 10.41,
+      "kick_tail": -8.76,
+      "kick_click": 4.98,
+      "snare_body": 11.36,
+      "snare_crack": 5.93,
+      "loudness_drop_db": 1.5,
+      "kept": false
+     }
+    ]
+   }
+  },
+  {
+   "move": "balance.punch-targets",
+   "target": "mix",
+   "outcome": "measured",
+   "numbers": {
+    "trial_master_loss_db": {
+     "kick_low": 1.23,
+     "kick_click": 1.34,
+     "snare_body": 2.83,
+     "snare_crack": 2.72
+    },
+    "mix_targets_db": {
+     "kick_low": 11.23,
+     "snare_body": 15.33
+    }
+   }
+  },
+  {
+   "move": "balance.punch",
+   "target": "kick",
+   "outcome": "kept",
+   "numbers": {
+    "target_db": 11.23,
+    "tried": [
+     {
+      "step_db": 0,
+      "kick_low": 12.37
+     },
+     {
+      "step_db": 1,
+      "kick_low": 13.35
+     },
+     {
+      "step_db": 2,
+      "kick_low": 14.3
+     },
+     {
+      "step_db": 3,
+      "kick_low": 15.23
+     },
+     {
+      "step_db": 4,
+      "kick_low": 16.2
+     },
+     {
+      "step_db": 5,
+      "kick_low": 16.99
+     },
+     {
+      "step_db": 6,
+      "kick_low": 18.09
+     },
+     {
+      "step_db": 7,
+      "kick_low": 19.06
+     },
+     {
+      "step_db": 8,
+      "kick_low": 20.0
+     },
+     {
+      "step_db": -1,
+      "kick_low": 11.47
+     },
+     {
+      "step_db": -2,
+      "kick_low": 10.7
+     },
+     {
+      "step_db": -3,
+      "kick_low": 9.81
+     },
+     {
+      "step_db": -4,
+      "kick_low": 9.13
+     },
+     {
+      "step_db": -5,
+      "kick_low": 8.22
+     },
+     {
+      "step_db": -6,
+      "kick_low": 7.64
+     }
+    ],
+    "fader_db": 11.67
+   }
+  },
+  {
+   "move": "balance.punch",
+   "target": "snare",
+   "outcome": "kept",
+   "numbers": {
+    "target_db": 15.33,
+    "tried": [
+     {
+      "step_db": 0,
+      "snare_body": 14.55
+     },
+     {
+      "step_db": 1,
+      "snare_body": 15.57
+     },
+     {
+      "step_db": 2,
+      "snare_body": 16.63
+     },
+     {
+      "step_db": 3,
+      "snare_body": 17.71
+     },
+     {
+      "step_db": 4,
+      "snare_body": 18.66
+     },
+     {
+      "step_db": 5,
+      "snare_body": 19.8
+     },
+     {
+      "step_db": 6,
+      "snare_body": 20.92
+     },
+     {
+      "step_db": -1,
+      "snare_body": 13.53
+     },
+     {
+      "step_db": -2,
+      "snare_body": 12.5
+     },
+     {
+      "step_db": -3,
+      "snare_body": 11.6
+     },
+     {
+      "step_db": -4,
+      "snare_body": 10.69
+     },
+     {
+      "step_db": -5,
+      "snare_body": 10.01
+     },
+     {
+      "step_db": -6,
+      "snare_body": 9.06
+     }
+    ],
+    "fader_db": 16.01
+   }
+  },
+  {
+   "move": "master.limit",
+   "target": "master",
+   "outcome": "kept",
+   "numbers": {
+    "target_lufs": -8.0,
+    "tried": [
+     {
+      "target_lufs": -7.0,
+      "tried": [
+       {
+        "clip_dbfs": -2.0,
+        "crest_loss_db": {
+         "kick_low": 0.84,
+         "kick_click": 1.12,
+         "snare_body": 3.46,
+         "snare_crack": 3.37
+        },
+        "drive_db": 2.4489
+       },
+       {
+        "clip_dbfs": -3.0,
+        "crest_loss_db": {
+         "kick_low": 1.17,
+         "kick_click": 1.61,
+         "snare_body": 3.88,
+         "snare_crack": 3.58
+        },
+        "drive_db": 2.679
+       }
+      ]
+     },
+     {
+      "target_lufs": -7.5,
+      "tried": [
+       {
+        "clip_dbfs": -2.0,
+        "crest_loss_db": {
+         "kick_low": 0.79,
+         "kick_click": 0.87,
+         "snare_body": 3.12,
+         "snare_crack": 3.07
+        },
+        "drive_db": 1.8423
+       },
+       {
+        "clip_dbfs": -3.0,
+        "crest_loss_db": {
+         "kick_low": 1.02,
+         "kick_click": 1.24,
+         "snare_body": 3.54,
+         "snare_crack": 3.31
+        },
+        "drive_db": 2.0287
+       }
+      ]
+     },
+     {
+      "target_lufs": -8.0,
+      "tried": [
+       {
+        "clip_dbfs": -2.0,
+        "crest_loss_db": {
+         "kick_low": 0.56,
+         "kick_click": 0.69,
+         "snare_body": 2.77,
+         "snare_crack": 2.8
+        },
+        "drive_db": 1.2506
+       },
+       {
+        "clip_dbfs": -3.0,
+        "crest_loss_db": {
+         "kick_low": 0.84,
+         "kick_click": 1.07,
+         "snare_body": 3.2,
+         "snare_crack": 3.07
+        },
+        "drive_db": 1.4065
+       }
+      ]
+     }
+    ],
+    "crest_loss_db": {
+     "kick_low": 0.56,
+     "kick_click": 0.69,
+     "snare_body": 2.77,
+     "snare_crack": 2.8
+    },
+    "master_punch": {
+     "kick_low": 10.91,
+     "kick_tail": -9.54,
+     "kick_click": 4.35,
+     "snare_body": 12.8,
+     "snare_crack": 5.27
+    }
+   }
+  }
+ ]
+}
