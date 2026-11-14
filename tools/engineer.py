@@ -442,6 +442,8 @@ class Engineer:
     KICK_TAIL_DB = -14.0
     LOWMID_BUILDUP_DB = 2.5
     AIR_TILT_DB = -10.5
+    PRESENCE_TILT_DB = -2.0
+    SUB_TILT_DB = -6.3
     CREST_LOSS_DB = 3.0
     MIN_SIDE_MID_DB = -12.0
 
@@ -460,7 +462,7 @@ class Engineer:
 
     def stages(self):
         return ["setup_stage", "tracks_stage", "drums_stage", "balance_stage", "context_stage", "glue_stage",
-                "rebalance_stage", "master_stage"]
+                "rebalance_stage", "peaks_stage", "master_stage"]
 
     # ---------- recipe helpers ----------
 
@@ -863,7 +865,7 @@ class Engineer:
                 node.record("kick.tail", "kept: deepest, short of target", {"kick_tail_db": after["kick_tail"]})
         # Weight: a bell at the kick's own low peak, kept if it lifts the low body against its 200-400 Hz.
         f, p = signal.welch(node.audio.astype(np.float64).sum(axis=0), self.rate, nperseg=16384)
-        band = (f >= 45) & (f <= 100)
+        band = (f >= 60) & (f <= 100)
         peak_hz = float(f[band][np.argmax(p[band])])
         low0, mud0 = node.band(45, 110), node.band(200, 400)
 
@@ -948,7 +950,12 @@ class Engineer:
     def context_stage(self, pool):
         self.duck_bass(self.rendered(pool))
         self.lowmid_owner(self.rendered(pool))
-        self.air(self.rendered(pool))
+        self.tilt(self.rendered(pool), "sub.cut", (25, 45), (60, 100), self.SUB_TILT_DB, -1,
+                  lambda g: {"plugin": "LowShelfFilter", "settings": {"cutoff_frequency_hz": 45.0, "gain_db": g, "q": 0.707}}, (-2.0, -4.0, -6.0))
+        self.tilt(self.rendered(pool), "presence", (2000, 4000), (125, 250), self.PRESENCE_TILT_DB, 1,
+                  lambda g: {"plugin": "PeakFilter", "settings": {"cutoff_frequency_hz": 3000.0, "gain_db": g, "q": 0.7}}, (1.5, 3.0, 4.5, 6.0))
+        self.tilt(self.rendered(pool), "air", (8000, 16000), (1000, 4000), self.AIR_TILT_DB, 1,
+                  lambda g: {"plugin": "HighShelfFilter", "settings": {"cutoff_frequency_hz": 10000.0, "gain_db": g, "q": 0.707}}, (2.0, 4.0, 6.0, 8.0))
 
     def duck_bass(self, mixer):
         """Low-end ownership: the bass dips below 120 Hz on kick hits when the two still overlap there."""
@@ -1005,14 +1012,16 @@ class Engineer:
         numbers |= {"peak_hz": peak, "owner_db": {n: r2(v) for n, v in shares.items()}, "owner": owner}
         tried, kept = [], None
         for gain in (-2.0, -3.0, -4.5, -6.0):
-            insert = {"id": "lowmid.cut", "plugin": "PeakFilter", "settings": {"cutoff_frequency_hz": float(peak), "gain_db": gain, "q": 1.0}}
+            insert = {"id": "lowmid.cut", "plugin": "PeakFilter", "settings": {"cutoff_frequency_hz": float(peak), "gain_db": gain, "q": 1.4}}
             out, key = daw.chain(self.cache, self.rate, mixer.nodes[owner][0], lambda: mixer.node_audio(owner), [insert])
             bus = self.bus(owner)
             new = self.mix_of(mixer, replace={owner: (out, key)})
             lv = third_levels(new, self.rate, centers, self.dense)
             b = max(lv[c] for c in self.LOWMID) - (lv[63] + lv[500]) / 2
-            chug_before = third_levels(self.leaf_out(mixer, owner), self.rate, [100], self.dense)[100]
-            chug_after = third_levels(daw.pan_gain(out, bus["fader_db"], bus["pan"]), self.rate, [100], self.dense)[100]
+            # Each owner keeps the band that is its job below the cut: kick thump, bass fundamentals, guitar chug.
+            keep = {"kick": 63, "bass": 80}.get(owner, 100)
+            chug_before = third_levels(self.leaf_out(mixer, owner), self.rate, [keep], self.dense)[keep]
+            chug_after = third_levels(daw.pan_gain(out, bus["fader_db"], bus["pan"]), self.rate, [keep], self.dense)[keep]
             ok = b < build - 0.5 and chug_before - chug_after <= 1.5
             tried.append({"gain_db": gain, "buildup_db": r2(b), "owner_100hz_change": r2(chug_after - chug_before), "ok": ok})
             if ok:
@@ -1023,40 +1032,45 @@ class Engineer:
             self.bus(owner)["inserts"].append(kept)
         self.log("lowmid.cut", owner, "kept" if kept else "dropped: did not work", numbers | {"tried": tried})
 
-    def air(self, mixer):
-        """Air: the 8-16 kHz octave against 1-4 kHz; a 10 kHz shelf on the cymbals (then the mix) when it is dull."""
-        def tilt(audio):
-            spec = meters.spectrum(audio[:, self.dense], self.rate)
-            return meters.band_db(spec, 8000, 16000) - meters.band_db(spec, 1000, 4000), meters.band_db(spec, 3000, 5000) - meters.band_db(spec, 1000, 3000)
+    def tilt(self, mixer, move, upper, lower, target, direction, make, gains):
+        """A broad tonal balance: band `upper` against band `lower` over the full-band frames. When it is off the genre
+        rule by more than 1 dB in `direction`, the source that owns the moved band gets a broad filter, the smallest that
+        reaches the rule; what one source cannot do, the mix bus does, up to 3 dB."""
+        moved = upper if direction > 0 or move == "sub.cut" else lower
 
-        mix = self.mix_of(mixer)
-        t0, harsh0 = tilt(mix)
-        numbers = {"tilt_db": r2(t0), "trigger_db": self.AIR_TILT_DB}
-        if t0 >= self.AIR_TILT_DB or not self.has("cymbals"):
-            self.log("overheads.air", "cymbals", "dropped: not needed", numbers)
+        def measure(audio):
+            spec = meters.spectrum(audio[:, self.dense], self.rate)
+            return meters.band_db(spec, *upper) - meters.band_db(spec, *lower)
+
+        t0 = measure(self.mix_of(mixer))
+        numbers = {"tilt_db": r2(t0), "rule_db": target, "bands": [upper, lower]}
+        off = (target - t0) * direction
+        if off <= 1.0:
+            self.log(move, "mix", "dropped: not needed", numbers)
             return
-        tried, kept = [], None
-        for gain in (2.0, 4.0, 6.0, 8.0):
-            insert = {"id": "overheads.air", "plugin": "HighShelfFilter", "settings": {"cutoff_frequency_hz": 10000.0, "gain_db": gain, "q": 0.707}}
-            out, key = daw.chain(self.cache, self.rate, mixer.nodes["cymbals"][0], lambda: mixer.node_audio("cymbals"), [insert])
-            bus = self.bus("cymbals")
-            new = self.mix_of(mixer, replace={"cymbals": (out, key)})
-            t, harsh = tilt(new)
-            ok = t > t0 + 0.5 and harsh <= harsh0 + 0.5
-            tried.append({"gain_db": gain, "tilt_db": r2(t), "harsh_change": r2(harsh - harsh0), "ok": ok})
+        shares = {n: meters.band_db(meters.spectrum(self.leaf_out(mixer, n)[:, self.dense], self.rate), *moved) for n in self.leaves()}
+        owner = max(shares, key=shares.get)
+        numbers |= {"owner": owner, "owner_db": {n: r2(v) for n, v in shares.items()}}
+        tried, kept, reached = [], None, t0
+        for gain in gains:
+            insert = {"id": move, **make(gain)}
+            out, key = daw.chain(self.cache, self.rate, mixer.nodes[owner][0], lambda: mixer.node_audio(owner), [insert])
+            t = measure(self.mix_of(mixer, replace={owner: (out, key)}))
+            ok = (t - t0) * direction >= 0.5 and (t - target) * direction <= 1.0
+            tried.append({"gain_db": gain, "tilt_db": r2(t), "ok": ok})
             if ok:
-                kept, t_kept = insert, t
-                if t >= self.AIR_TILT_DB:
+                kept, reached = insert, t
+                if (target - t) * direction <= 0.5:
                     break
         if kept:
-            self.bus("cymbals")["inserts"].append(kept)
-        self.log("overheads.air", "cymbals", "kept" if kept else "dropped: did not work", numbers | {"tried": tried})
-        rest = self.AIR_TILT_DB - (t_kept if kept else t0)
-        if rest > 0.5:
-            gain = round(float(min(3.0, rest)), 2)
-            self.recipe["mix"]["inserts"].append({"id": "mix-bus.air", "plugin": "HighShelfFilter",
-                                                  "settings": {"cutoff_frequency_hz": 10000.0, "gain_db": gain, "q": 0.707}})
-            self.log("mix-bus.air", "mix", "kept", {"rest_db": r2(rest), "gain_db": gain})
+            self.bus(owner)["inserts"].append(kept)
+        self.log(move, owner, "kept" if kept else "dropped: did not work", numbers | {"tried": tried})
+        rest = (target - reached) * direction
+        if rest > 1.0 and move != "sub.cut":
+            gain = round(float(min(3.0, rest)) * direction, 2)
+            insert = make(gain)
+            self.recipe["mix"]["inserts"].append({"id": f"mix-bus.{move}", **insert})
+            self.log(f"mix-bus.{move}", "mix", "kept", {"rest_db": r2(rest), "gain_db": gain})
 
     # ---------- stage 6: drum bus glue, judged at matched loudness ----------
 
@@ -1132,14 +1146,13 @@ class Engineer:
         a, b = punch_of(mix, self.rate, kick_s, snare_s), punch_of(master, self.rate, kick_s, snare_s)
         return {k: r2(a[k] - b[k]) for k in ("kick_low", "kick_click", "snare_body", "snare_crack") if a.get(k) is not None and b.get(k) is not None}
 
-    def master_stage(self, pool):
-        """The loudest-safe master: limiter alone, or a clipper first; the option losing the least punch wins."""
-        mixer = self.mixer()
-        mix, _ = mixer.render(pool, stop_at_mix=True)
+    def master_select(self, mixer, mix):
+        """The master chain at the release loudness that loses the least punch: a clipper at -3 or -5 dBFS after the
+        drive, then the limiter. Returns (chain, crest loss, master punch) or None."""
         mix_key = mixer.nodes["mix"][0]
         kick_s, snare_s = self.drum_times(mixer)
-        tried, best = [], None
-        for clip in (None, -3.0, -5.0, -7.0):
+        best, tried = None, []
+        for clip in (-3.0, -5.0):
             self._last_drive = None
             try:
                 out, chain, level = self.trial(mix, mix_key, clip_db=clip)
@@ -1148,13 +1161,55 @@ class Engineer:
                 continue
             loss = self.crest_loss(mix, out, kick_s, snare_s)
             worst = max(loss.values(), default=0)
-            tried.append({"clip_dbfs": clip, "reached": True, "crest_loss_db": loss, "drive_db": chain[0]["settings"]["gain_db"]})
+            tried.append({"clip_dbfs": clip, "crest_loss_db": loss, "drive_db": chain[0]["settings"]["gain_db"]})
             if best is None or worst < best[0]:
-                best = (worst, chain, loss)
+                best = (worst, chain, loss, punch_of(out, self.rate, kick_s, snare_s))
+        return best, tried
+
+    def peaks_stage(self, pool):
+        """Drum peak control judged through the master: a clipper on the kick or snare bus, a few dB under its median
+        hit peak, kept only if the master at the release loudness keeps more kick and snare punch."""
+        mixer = self.rendered(pool)
+        mix = mixer.nodes["mix"][1]
+        base, _ = self.master_select(mixer, mix)
+        if base is None:
+            self.log("drums.peaks", "drums", "dropped: no master reached the loudness", {})
+            return
+        score = lambda p: (p.get("kick_low") or 0) + (p.get("snare_body") or 0)
+        for name in ("kick", "snare"):
+            if not self.has(name):
+                continue
+            audio = mixer.node_audio(name)
+            times = meters.detect_hits(audio, self.rate)
+            if len(times) < 4:
+                continue
+            span = int(0.01 * self.rate)
+            peak = float(np.median([20 * math.log10(max(float(np.abs(audio[:, t : t + span]).max()), 1e-9)) for t in times]))
+            tried, kept = [], None
+            for depth in (3.0, 6.0):
+                insert = {"id": f"{name}.clip", "plugin": "Clipping", "settings": {"threshold_db": round(peak - depth, 2)}}
+                self.bus(name)["inserts"].append(insert)
+                m = self.rendered(pool)
+                found, _ = self.master_select(m, m.nodes["mix"][1])
+                self.bus(name)["inserts"].pop()
+                ok = found is not None and score(found[3]) >= score(base[3]) + 0.5 and all(
+                    (found[3].get(k) or 0) >= (base[3].get(k) or 0) - 0.5 for k in ("kick_low", "snare_body"))
+                tried.append({"depth_db": depth, "master_punch": found[3] if found else None, "ok": ok})
+                if ok:
+                    kept, base = insert, found
+            if kept:
+                self.bus(name)["inserts"].append(kept)
+            self.log(f"{name}.clip", name, "kept" if kept else "dropped: master punch did not improve",
+                     {"median_hit_peak_db": r2(peak), "tried": tried})
+
+    def master_stage(self, pool):
+        mixer = self.rendered(pool)
+        best, tried = self.master_select(mixer, mixer.nodes["mix"][1])
         if best is None:
             raise RuntimeError(f"no master chain reached {self.TARGET_LUFS} LUFS: {tried}")
         self.recipe["master"]["inserts"] = best[1]
-        self.log("master.limit", "master", "kept", {"target_lufs": self.TARGET_LUFS, "tried": tried, "crest_loss_db": best[2]})
+        self.log("master.limit", "master", "kept", {"target_lufs": self.TARGET_LUFS, "tried": tried, "crest_loss_db": best[2],
+                                                   "master_punch": best[3]})
 
     # ---------- export: render the recipe as written, check the file written ----------
 
