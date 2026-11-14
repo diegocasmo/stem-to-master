@@ -999,8 +999,62 @@ class Engineer:
                   lambda g: {"plugin": "HighShelfFilter", "settings": {"cutoff_frequency_hz": 7000.0, "gain_db": g, "q": 0.707}}, (2.0, 4.0, 6.0))
         self.tilt(self.rendered(pool), "top", (11300, 16000), (5600, 11300), self.TOP_TILT_DB + shift, 1,
                   lambda g: {"plugin": "HighShelfFilter", "settings": {"cutoff_frequency_hz": 12000.0, "gain_db": g, "q": 0.707}}, (2.0, 4.0, 6.0))
+        self.lead_space(pool)
         self.attack_eq(self.rendered(pool), "kick", "kick.click", "kick_click", 4000.0, self.KICK_CLICK_PROMINENCE)
         self.attack_eq(self.rendered(pool), "snare", "snare.crack", "snare_crack", 5000.0, self.SNARE_CRACK_PROMINENCE)
+
+    def lead_space(self, pool):
+        """A guitar that plays in the middle through the song (a melody or lead, no double) gets a stereo plate on a
+        send, the smallest that widens the 500 Hz-2 kHz side by 1.5 dB without lifting that band by more than 1 dB."""
+        mixer = self.rendered(pool)
+        centred = []
+        for t in self.tracks_of("gtr"):
+            if t["pan"] != 0.0:
+                continue
+            audio = mixer.node_audio(t["name"])
+            if t["channels"] == 2 and meters.side_mid_db(audio) > -10:
+                continue
+            x = audio[:, self.dense].astype(np.float64)
+            hop = int(0.1 * self.rate)
+            count = x.shape[1] // hop
+            level = 10 * np.log10((x[:, : count * hop] ** 2).sum(axis=0).reshape(count, hop).mean(axis=1) + 1e-20)
+            if count and (level > level.max() - 30).mean() >= 0.5:
+                centred.append(t)
+        if not centred:
+            self.log("guitars.lead-space", "gtr", "dropped: not needed", {"why": "no guitar plays alone in the middle"})
+            return
+
+        def width(audio):
+            x = meters.filtered(audio[:, self.dense], self.rate, 500, 2000)
+            return meters.side_mid_db(x), meters.db(float((x**2).sum()))
+
+        w0, l0 = width(self.mix_of(mixer))
+        self.recipe["buses"].append({"name": "gtr-space", "inserts": [{"id": "guitars.lead-space", "plugin": "DragonflyPlateReverb", "settings": {
+            "dry_level": 0.0, "wet_level": 100.0, "algorithm": "Nested", "width": 100.0, "predelay_ms": 30.0, "decay_s": 1.4,
+            "low_cut_hz": 200.0, "high_cut_hz": 8000.0, "dampen_hz": 6000.0}}], "fader_db": 0.0, "pan": 0, "out": "mix", "sends": []})
+        tried, kept = [], None
+        for send in (-16.0, -12.0, -8.0, -4.0):
+            for t in centred:
+                t["sends"] = [{"bus": "gtr-space", "gain_db": send}]
+            m = self.rendered(pool)
+            w, l = width(self.mix_of(m))
+            ok = w - w0 >= 0.5 and l - l0 <= 1.0
+            tried.append({"send_db": send, "side_mid_change_db": r2(w - w0), "band_change_db": r2(l - l0), "ok": ok})
+            if ok:
+                kept = send
+                if w - w0 >= 1.5:
+                    break
+            elif kept is not None:
+                break
+        if kept is None:
+            for t in centred:
+                t["sends"] = []
+            self.recipe["buses"].remove(self.bus("gtr-space"))
+        else:
+            for t in centred:
+                t["sends"] = [{"bus": "gtr-space", "gain_db": kept}]
+        self.log("guitars.lead-space", "gtr", "kept" if kept is not None else "dropped: did not work",
+                 {"centred": [t["name"] for t in centred], "side_mid_db": r2(w0), "tried": tried})
 
     def cymbal_air(self, mixer):
         """The cymbal bus's own 8-16 kHz against its 1-4 kHz, before any tone move: how bright the cymbals were recorded."""
