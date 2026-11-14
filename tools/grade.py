@@ -14,7 +14,7 @@ import pyloudnorm
 import soundfile
 from scipy import signal
 
-from punch import ENV_S, bandpass, db, drum_hits, env, prominence, tail
+from punch import bandpass, db, drum_hits, env, prominence, tail
 
 OCTAVES = [31.5, 63, 125, 250, 500, 1000, 2000, 4000, 8000, 16000]
 THIRDS = [10000, 12500]
@@ -22,9 +22,9 @@ WIDTH_BANDS = [(120, 500), (500, 2000), (2000, 8000)]
 MIN_SCORED_S = 8.0
 MIN_HITS = 15
 TOL = {"band": 2.0, "punch": 1.5, "width": 1.5}
-# A hit is scored when the raw vocals sit this far under the raw instruments in its band, in the windows around it that prominence
-# divides by. At 10 dB the vocal can lift the official's level around a hit by at most 0.4 dB, under a third of the tolerance.
-HIT_VOCAL_DB = 10.0
+# A hit is scored when adding the raw vocals to the raw instruments moves its prominence by at most this much, under a
+# third of the punch tolerance. Prominence is tested itself, so a vocal in the attack peak or in the median around it counts.
+HIT_VOCAL_BIAS_DB = 0.4
 HISTORY = Path.home() / "stemmaster-scratch" / "night" / "grades.jsonl"
 
 
@@ -92,15 +92,8 @@ def vocal_mask(song, notes, rate, length, frames):
             mask[:, (t >= a) & (t <= b)] = True
         return mask
 
-    def summed(files):
-        total = np.zeros(length)
-        for path in files:
-            x = soundfile.read(path, always_2d=True, dtype="float64")[0]
-            total[: len(x)] += x.mean(axis=1)[:length]
-        return total
-
-    voice, _, _ = cells(summed(vocal_files), rate)
-    band, _, _ = cells(summed(sorted((song / "stems").glob("*.wav"))), rate)
+    voice, _, _ = cells(summed_mono(vocal_files, length), rate)
+    band, _, _ = cells(summed_mono(sorted((song / "stems").glob("*.wav")), length), rate)
     # No time margin for the official's vocal reverb and delays: a 0.3-1 s margin left 002 and 003 under 2 s scored
     # in every octave above 250 Hz. The cost is a bias: those effects count as instruments (night decisions N10).
     return 10 * np.log10(voice + 1e-20) <= 10 * np.log10(band + 1e-20) - 15
@@ -120,10 +113,7 @@ def grade(song, master_path=None):
     length = min(len(ours), len(official))
     ours, official = ours[:length].T, official[:length].T
     # Aligned to the raw stems, not to our master, so the official's numbers never move with our mix.
-    stems_sum = np.zeros(length)
-    for stem in sorted((song / "stems").glob("*.wav")):
-        x = soundfile.read(stem, always_2d=True, dtype="float64")[0]
-        stems_sum[: len(x)] += x.mean(axis=1)[:length]
+    stems_sum = summed_mono(sorted((song / "stems").glob("*.wav")), length)
     lag = align(stems_sum[None], official, rate, reach_s=0.02)
     # official[t + lag] matches ours[t]: shift the official onto our clock.
     official = np.roll(official, -lag, axis=1)
@@ -183,20 +173,14 @@ def grade(song, master_path=None):
     spans = notes.get("graded_spans_s", [[0, length / rate]])
 
     def scored_hits(times, lo, hi):
-        """Hits away from the edges; with vocals, only those the raw vocals leave clear in this band. The 0.1 s cells
-        of the band mask are too coarse here: a sung line covers nearly every snare hit in some cell."""
+        """Hits away from the edges; with vocals, only those whose prominence the raw vocals barely move in this band.
+        The 0.1 s cells of the band mask are too coarse here: a sung line covers nearly every snare hit in some cell."""
         times = np.array([h for h in times if 0.2 < h < length / rate - 0.2])
         if vocals is None:
             return np.array([h for h in times if any(a <= h - 0.13 and h + 0.15 <= b for a, b in spans)])
         ei, ev = env(bandpass(stems_sum[None], rate, lo, hi), rate), env(bandpass(vocals[None], rate, lo, hi), rate)
-        t = (np.arange(len(ei)) + 0.5) * ENV_S
-        keep = []
-        for h in times:
-            # The windows either side of the hit, where a vocal would raise the level prominence divides by.
-            near = ((t >= h - 0.13) & (t < h - 0.05)) | ((t >= h + 0.07) & (t < h + 0.15))
-            if db(ei[near].sum()) - db(ev[near].sum()) >= HIT_VOCAL_DB:
-                keep.append(h)
-        return np.array(keep)
+        bias = prominence(ei + ev, times) - prominence(ei, times)
+        return times[np.abs(bias) <= HIT_VOCAL_BIAS_DB]
 
     punch, raw = {}, {}
     for drum, bands_hz in (("kick", {"low": (40, 120), "click": (2000, 6000)}), ("snare", {"body": (150, 350), "crack": (2000, 8000)})):
@@ -237,7 +221,7 @@ def grade(song, master_path=None):
     punch_keys = [k for k in ("kick_low", "kick_click", "snare_body", "snare_crack") if punch.get(k) is not None]
     strict = judge([v for v in bands.values() if v is not None], [(k, punch[k]) for k in punch_keys],
                    [v for v in width.values() if v is not None])
-    # A band scored on under 8 s, or a punch on under 15 hits, is reported but does not gate (002: 9 masked hits read +4.5 dB, 109 unmasked hits +0.9).
+    # A band scored on under 8 s, or a punch on under 15 hits, is reported but does not gate: a few hits can read several dB off.
     confident = judge([v for k, v in bands.items() if v is not None and scored[k] >= MIN_SCORED_S],
                       [(k, punch[k]) for k in punch_keys if raw[k][2] >= MIN_HITS],
                       [v for k, v in width.items() if v is not None and width_scored[k] >= MIN_SCORED_S])
