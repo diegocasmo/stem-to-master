@@ -214,7 +214,7 @@ def tom_edit(node, move):
     # tom's own decay where the edit's fixed gaps do not reach the bleed. The edit is the fallback for toms whose
     # bleed is too close to their hits for a level threshold. Hit levels sum power over channels; the gate reads each
     # channel, so the threshold comes down by the channel count. FreeGate snaps to its own grid (threshold 0.08 dB,
-    # attack 0.2 ms, release about 0.5 ms), so the recipe holds the values it renders.
+    # attack 0.2 ms, release about 0.5 ms), so the recipe holds the values it renders (release to 0.01 ms).
     softest = levels[own_mask].min() - 10 * np.log10(node.audio.shape[0])
     threshold = round(float(round(max(-80.0, softest - 6) / 0.08) * 0.08), 2)
     numbers["gate_threshold_db"] = threshold
