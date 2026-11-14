@@ -258,7 +258,10 @@ def decide_bass(node, dense):
         power = (audio.astype(np.float64) ** 2).sum(axis=0)
         cum = np.concatenate([[0.0], np.cumsum(power)])
         span = int(0.1 * rate)
-        values = 10 * np.log10(np.maximum((cum[note_starts + span] - cum[note_starts]) / span, 1e-20))
+        starts = note_starts[note_starts + span < len(cum)].astype(int)
+        if len(starts) < 5:
+            return 0.0
+        values = 10 * np.log10(np.maximum((cum[starts + span] - cum[starts]) / span, 1e-20))
         return float(np.percentile(values, 90) - np.percentile(values, 10))
 
     before = note_spread(node.audio)
