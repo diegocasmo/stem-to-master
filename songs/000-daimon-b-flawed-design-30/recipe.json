@@ -2734,7 +2734,8 @@
    "outcome": "dropped: not needed",
    "numbers": {
     "sub_tilt_db": -5.4,
-    "rule_db": -4.0
+    "rule_db": -4.0,
+    "notes_under_drop_d": false
    }
   },
   {
@@ -2743,7 +2744,8 @@
    "outcome": "dropped: not needed",
    "numbers": {
     "sub_tilt_db": -21.02,
-    "rule_db": -4.0
+    "rule_db": -4.0,
+    "notes_under_drop_d": false
    }
   },
   {

@@ -2066,6 +2066,7 @@
    "numbers": {
     "sub_tilt_db": -1.59,
     "rule_db": -4.0,
+    "notes_under_drop_d": false,
     "tried": [
      {
       "gain_db": -2.0,
@@ -2101,6 +2102,7 @@
    "numbers": {
     "sub_tilt_db": -1.51,
     "rule_db": -4.0,
+    "notes_under_drop_d": false,
     "tried": [
      {
       "gain_db": -2.0,

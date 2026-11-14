@@ -24,6 +24,10 @@ import soundfile
 import stems as stemlib
 
 HOLD_DB = 0.5
+# Drop D is the lowest note a 4-string bass tunes to by default (36.7 Hz); a lower note is a 5-string or a low tuning.
+SUB_NOTE_HZ = 35.0
+# The standard low E (41.2 Hz): with notes under drop D, the bass gives up the fundamentals under it.
+SUB_HPF_HZ = 41.0
 ZL_EQ = "ZL Equalizer 2"
 ZL_COMP = "ZL Compressor"
 
@@ -241,9 +245,17 @@ def decide_bass(node, dense):
     f0s = np.array([n["f0_hz"] for n in found if "f0_hz" in n])
     lowest = float(np.percentile(f0s, 3)) if len(f0s) else 41.0
     below, fund = node.band(15, lowest * 0.85), node.band(lowest * 0.9, lowest * 1.12)
-    cands, judge, numbers = steep_hpf(node, "bass.hpf", [round(lowest * 0.7, 1)], (15, lowest * 0.7), (lowest * 0.95, lowest * 1.6),
-                                      order="24 dB/oct", fall_db=1, hold_db=1.0)
-    node.attempt("bass.hpf", below > fund - 10, numbers | {"lowest_f0_hz": r2(lowest), "fundamental_db": r2(fund)}, cands, judge)
+    if lowest < SUB_NOTE_HZ:
+        # Notes under drop D put their fundamentals in the sub, where few speakers play them and they cost the limiter
+        # headroom: the high-pass sits at SUB_HPF_HZ and the second harmonic carries those notes.
+        cands, judge, numbers = steep_hpf(node, "bass.hpf", [SUB_HPF_HZ], (15, SUB_NOTE_HZ), (lowest * 1.9, lowest * 3.2),
+                                          order="24 dB/oct", fall_db=1, hold_db=1.0)
+        needed = True
+    else:
+        cands, judge, numbers = steep_hpf(node, "bass.hpf", [round(lowest * 0.7, 1)], (15, lowest * 0.7), (lowest * 0.95, lowest * 1.6),
+                                          order="24 dB/oct", fall_db=1, hold_db=1.0)
+        needed = below > fund - 10
+    node.attempt("bass.hpf", needed, numbers | {"lowest_f0_hz": r2(lowest), "fundamental_db": r2(fund)}, cands, judge)
     # bass.rides and bass.compress read note levels in the dense passage.
     start, end = dense
     levels = np.array([n["level_db"] for n in found if "level_db" in n and start * rate <= n["start"] < end * rate])
@@ -990,8 +1002,13 @@ class Engineer:
                 return meters.band_db(spec, 25, 45) - meters.band_db(spec, 60, 100)
 
             t0 = tilt(audio)
-            numbers = {"sub_tilt_db": r2(t0), "rule_db": self.SUB_SOURCE_DB}
-            if t0 <= self.SUB_SOURCE_DB:
+            lowest = min((d["numbers"]["lowest_f0_hz"] for d in self.recipe["decisions"]
+                          if name == "bass" and d["move"] == "bass.hpf" and "lowest_f0_hz" in d["numbers"]), default=None)
+            low_notes = lowest is not None and lowest < SUB_NOTE_HZ
+            numbers = {"sub_tilt_db": r2(t0), "rule_db": self.SUB_SOURCE_DB, "notes_under_drop_d": low_notes}
+            # A bass with notes under drop D is cut down to the same depth even when its high-pass already took the
+            # lowest fundamentals: the notes above the high-pass still fill the sub.
+            if t0 <= self.SUB_SOURCE_DB and not low_notes:
                 self.log("sub.cut", name, "dropped: not needed", numbers)
                 continue
             keep0 = meters.band_db(meters.spectrum(audio[:, self.dense], self.rate), 60, 100)
