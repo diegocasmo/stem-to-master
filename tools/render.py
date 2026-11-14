@@ -20,7 +20,6 @@ import pedalboard
 import pyloudnorm
 import soundfile
 
-import airwindows
 import native
 import prepared
 
@@ -47,7 +46,7 @@ RAND_SEED = 1
 
 
 def _load_plugin(bundle, **kwargs):
-    # Dragonfly and Airwindows draw on the process-wide C rand(), so without a fixed seed their output depends on
+    # Dragonfly draws on the process-wide C rand(), so without a fixed seed its output depends on
     # how many plugins loaded before them in this process.
     LIBC.srand(RAND_SEED)
     return pedalboard.load_plugin(str(bundle), **kwargs)
@@ -63,11 +62,6 @@ def load(step, rate=None, channels=None):
         return plugin
     # A fresh instance per step: reset() does not clear every plugin's state, so reuse changes the sound.
     plugin = _load_plugin(bundle)
-    if "effect" in settings:
-        airwindows.select(plugin, settings.pop("effect"))
-        # Switching effects keeps the previous effect's slot values, so an unset parameter is a leftover, not a default.
-        if missing := set(plugin.parameters) - airwindows.WRAPPER - set(settings):
-            sys.exit(f"step {step.get('id')}: set every parameter of {step['settings']['effect']}, missing {sorted(missing)}")
     for key, value in settings.items():
         # setattr would silently add an unknown name instead of failing.
         if key not in plugin.parameters:
@@ -133,8 +127,8 @@ def runs_source(module):
 
 # Hashed at import, so the tag names the code this process runs even if the files change on disk later. None when a
 # stale .pyc may be what runs, which turns the memo off.
-CODE = code_digest(Path(__file__).with_name(name) for name in ("render.py", "native.py", "airwindows.py", "prepared.py")) \
-    if all(runs_source(module) for module in (sys.modules[__name__], native, airwindows, prepared)) else None
+CODE = code_digest(Path(__file__).with_name(name) for name in ("render.py", "native.py", "prepared.py")) \
+    if all(runs_source(module) for module in (sys.modules[__name__], native, prepared)) else None
 # Only names the memo writes are ever evicted, so a folder shared with other files keeps them.
 MEMO_NAME = re.compile(r"([0-9a-f]{16})-[0-9a-f]{64}(\.npy|\.seen|\.\d+\.tmp)")
 # What an empty file takes on disk, so seen markers count toward the cap.
@@ -179,7 +173,7 @@ class Memo:
 
     def __init__(self, folder, cap_bytes=MEMO_BYTES, sightings=2):
         if CODE is None:
-            raise RuntimeError("a .pyc of render.py, native.py, airwindows.py or prepared.py holds other code than its source")
+            raise RuntimeError("a .pyc of render.py, native.py or prepared.py holds other code than its source")
         # Most outputs are computed once and never asked for again, so with sightings=2 one is stored only on its
         # second computation; an empty .seen file remembers the first, across runs too. sightings=1 stores on the first.
         if sightings not in (1, 2):
@@ -522,7 +516,7 @@ def check(recipe, rate, length, strict=True):
         elif plugin == "Duck":
             error = native.duck_error(step["settings"], step["target"], set(names) | set(stems), rate)
         elif not (PLUGINS / f"{plugin}.vst3").exists() and not hasattr(pedalboard, plugin):
-            error = f"unknown plugin {plugin} (copy its .vst3 into plugins/)"
+            error = f"unknown plugin {plugin} (add it to plugins.lock and run ./setup.sh)"
         elif step["target"] in returns:
             error = dry_error(step)
         else:

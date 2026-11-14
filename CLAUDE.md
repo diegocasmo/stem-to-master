@@ -9,7 +9,7 @@ Mix and master a song from its aligned stems like an engineer in a DAW, to sound
 - Instrumental only: exclude every vocal stem. Ignore DI stems. Every song has drums.
 - The recipe is the source of truth: per track an ordered list of inserts (any order), sends, buses, faders, pan, automation, then the master chain. Renders are a cache rebuilt from the stems.
 - Correctness is never traded for speed: a cached result must equal a fresh one.
-- Python with pedalboard and the plugins in plugins/ (each must render identically in fresh runs). Install with ./setup.sh, run with uv run.
+- Python with pedalboard and the plugins pinned in plugins.lock (each must render identically in fresh runs). ./setup.sh installs them into plugins/; run with uv run.
 - Master: 24-bit WAV at the stems' rate, true peak at or below -1 dBTP, integrated loudness from the profile.
 
 ## Workflow
