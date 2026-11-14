@@ -3,6 +3,7 @@
 Each move follows docs/mixing-chains: its Needed-if decides whether it is tried, a rule computes its settings, and its
 Worked-if (measured on the insert's own input and output) decides whether it is kept. Every decision is recorded.
 """
+import hashlib
 import json
 import math
 import os
@@ -12,6 +13,7 @@ from pathlib import Path
 import numpy as np
 from scipy import signal
 
+import analyze
 import daw
 import meters
 import measure as measurelib
@@ -255,6 +257,20 @@ def tom_edit(node, move):
 
     node.attempt(move, bleed > -25 and segments, numbers, [{"plugin": "Ride", "settings": {"segments": segments, "ramp_ms": 10}}], judge)
     node.hits = times_backup
+
+
+LOW_THIRDS = [40, 50, 63, 80, 100, 125, 160]
+
+
+def low_thirds(audio, rate):
+    """Third-octave levels 40-160 Hz over the loud parts, relative to their total power, as the profile's bands are."""
+    x = audio.T.astype(np.float64)
+    _, short, hop = analyze.loudness(x, rate)
+    parts = analyze.loud_parts(x, rate, short, hop)
+    freqs, power = signal.welch(np.concatenate(parts).T, rate, nperseg=16384, axis=-1)
+    power = power.sum(axis=0)
+    total = power.sum()
+    return [r2(10 * math.log10(power[(freqs >= c / 2 ** (1 / 6)) & (freqs < c * 2 ** (1 / 6))].sum() / total)) for c in LOW_THIRDS]
 
 
 def measure_valley(audio, times, rate):
@@ -898,7 +914,53 @@ class Engineer:
         low, high = min(refs), max(refs)
         found["max_short_term_over_integrated_lu"] = {"value": r2(value), "min": r2(low), "max": r2(high),
                                                      "outside": r2(value - high if value > high else value - low if value < low else 0)}
+        # The low end in third octaves: kick and bass share 40-160 Hz, and an octave band there can sit in range while
+        # its thirds are 3 dB off in opposite directions (review 1).
+        ours = low_thirds(audio, self.rate)
+        refs = [self.reference_measure(ref["file"], "low-thirds", low_thirds) for ref in self.profile["references"]]
+        for index, center in enumerate(LOW_THIRDS):
+            values = [r[index] for r in refs]
+            low, high = min(values), max(values)
+            value = ours[index]
+            found[f"thirds_db.{center}"] = {"value": value, "min": low, "max": high,
+                                           "outside": r2(value - high if value > high else value - low if value < low else 0)}
+        top = [self.reference_top(ref["file"]) for ref in self.profile["references"]]
+        value = analyze.measure.__wrapped__(audio.T.astype(np.float64), self.rate, True)["bands_db"]["16000"]
+        low, high = min(top), max(top)
+        found["bands_db.16000"] = {"value": value, "min": low, "max": high,
+                                   "outside": r2(value - high if value > high else value - low if value < low else 0)}
         return {k: v for k, v in found.items() if k not in ("integrated_lufs", "max_short_term_lufs")}
+
+    def reference_measure(self, name, label, measure):
+        path = daw.ROOT / "profiles" / self.facts["profile"] / "references" / name
+        key = daw.digest("reference", label, hashlib.sha256(path.read_bytes()).hexdigest(), self.rate)
+
+        def compute():
+            import soundfile
+            audio, rate = soundfile.read(path, dtype="float32", always_2d=True)
+            audio = audio.T
+            if rate != self.rate:
+                common = math.gcd(rate, self.rate)
+                audio = signal.resample_poly(audio, self.rate // common, rate // common, axis=1).astype(np.float32)
+            return measure(audio, self.rate)
+
+        return self.cache.measured(key, label, compute)
+
+    def reference_top(self, name):
+        """The references' 11-22 kHz octave, measured as profile.json measures the others. profile.json leaves it out
+        because it runs past Nyquist; measured the same way on both sides it still compares like with like."""
+        path = daw.ROOT / "profiles" / self.facts["profile"] / "references" / name
+        key = daw.digest("reference-top", hashlib.sha256(path.read_bytes()).hexdigest(), self.rate)
+
+        def compute():
+            import soundfile
+            audio, rate = soundfile.read(path, dtype="float64", always_2d=True)
+            if rate != self.rate:
+                common = math.gcd(rate, self.rate)
+                audio = signal.resample_poly(audio, self.rate // common, rate // common, axis=0)
+            return analyze.measure.__wrapped__(audio, self.rate, True)["bands_db"]["16000"]
+
+        return self.cache.measured(key, "top", compute)
 
     LEAVES = ["kick", "snare", "toms", "cymbals", "room", "bass", "gtr", "synths"]
 
@@ -921,7 +983,7 @@ class Engineer:
             _, master, _, _ = self.trial(mix, mixer.nodes["mix"][0])
             check = self.profile_check(master)
             self.log("profile.measure", "mix", f"pass {index + 1}", check)
-            if not any(v["outside"] for k, v in check.items() if k.startswith("bands_db.")):
+            if not any(v["outside"] for k, v in check.items() if k.startswith(("bands_db.", "thirds_db."))):
                 break
             self.correct_bands(mixer, mix, check)
         layer = [self.track("22_ElecGtr2"), self.track("23_ElecGtr2DT")]
@@ -941,7 +1003,7 @@ class Engineer:
         self.log("profile.after", "mix", "measured", check)
 
     MOVES = {("gtr", -1): "guitars.mud-cut", ("gtr", 1): "guitars.tone", ("bass", -1): "bass.mud-cut", ("bass", 1): "bass.growl",
-             ("cymbals", -1): "overheads.harsh-cut", ("cymbals", 1): "overheads.air", ("kick", 1): "kick.thump", ("kick", -1): "kick.bass-room",
+             ("cymbals", -1): "overheads.harsh-cut", ("cymbals", 1): "overheads.air", ("room", 1): "overheads.room-blend.tone", ("kick", 1): "kick.thump", ("kick", -1): "kick.bass-room",
              ("synths", -1): "synths.cut-in-context", ("synths", 1): "synths.colour", ("snare", 1): "snare.body-crack", ("snare", -1): "snare.ring-cut"}
 
     def correct_bands(self, mixer, mix, check):
@@ -950,7 +1012,11 @@ class Engineer:
         mix_spec = meters.spectrum(mix, self.rate)
         leaves = {name: meters.spectrum(self.leaf_out(mixer, name), self.rate) for name in self.LEAVES}
         for field, entry in check.items():
-            if not field.startswith("bands_db.") or entry["outside"] == 0:
+            if not field.startswith(("bands_db.", "thirds_db.")) or entry["outside"] == 0:
+                continue
+            third_band = field.startswith("thirds_db.")
+            if third_band and entry["outside"] < 0:
+                # Third-octave fixes only cut a build-up; boosts this narrow stack into resonances (review 1).
                 continue
             center = float(field.split(".", 1)[1])
             span = entry["max"] - entry["min"]
@@ -958,23 +1024,71 @@ class Engineer:
             change = goal - entry["value"]
             thirds = [center / 2 ** (1 / 3), center, center * 2 ** (1 / 3)]
             third = lambda spec, c: meters.band_db(spec, c / 2 ** (1 / 6), c * 2 ** (1 / 6))
-            if change > 0:
+            sign = 1 if change > 0 else -1
+
+            def at_limit(name, hz):
+                # A source whose filter near hz already sits at the 6 dB limit in this direction gives way to the next.
+                return any(i.get("profile") and abs(math.log2(i["settings"]["cutoff_frequency_hz"] / hz)) <= 1 / 3
+                           and i["settings"]["gain_db"] * sign >= 6 for i in self.bus(name)["inserts"])
+
+            def first_owner(hz, rank):
+                ranked = sorted(leaves, key=rank, reverse=True)
+                return next((n for n in ranked if not at_limit(n, hz)), ranked[0])
+
+            if third_band:
+                freq = center
+                owner = first_owner(freq, lambda n: third(leaves[n], center))
+            elif change > 0:
                 owner = max(leaves, key=lambda n: meters.band_db(leaves[n], center / 2 ** 0.5, center * 2 ** 0.5))
                 # A boost stays inside its octave, so it does not raise the neighbouring band.
                 freq = max([center / 2 ** (1 / 6), center, center * 2 ** (1 / 6)], key=lambda c: third(leaves[owner], c))
             else:
                 freq = max(thirds, key=lambda c: third(mix_spec, c))
-                owner = max(leaves, key=lambda n: third(leaves[n], freq))
-            low, high = freq / 2 ** 0.5, freq * 2 ** 0.5
+                owner = first_owner(freq, lambda n: third(leaves[n], freq))
+            if center == 16000:
+                # The top band runs past Nyquist, so it is shaped with a shelf from 10 kHz, not a bell.
+                freq = 10000.0
+            width = 2 ** (1 / 6) if third_band else 2 ** 0.5
+            low, high = freq / width, min(freq * width, self.rate / 2)
             share = min(10 ** ((meters.band_db(leaves[owner], low, high) - meters.band_db(mix_spec, low, high)) / 10), 0.99)
             inner = (10 ** (change / 10) - 1 + share) / share
-            gain = float(np.clip(10 * math.log10(inner) if inner > 0 else -6.0, -6, 6))
-            move = self.MOVES.get((owner, 1 if gain > 0 else -1), f"{owner}.tone")
-            insert = {"id": move, "plugin": "PeakFilter", "settings": {"cutoff_frequency_hz": round(freq, 1), "gain_db": round(gain, 2),
-                                                                         "q": 2.0 if gain > 0 else 1.4}}
-            self.bus(owner)["inserts"].append(insert)
-            self.log(move, owner, "kept", {"band": field, "value": entry["value"], "range": [entry["min"], entry["max"]],
-                                           "bell_hz": r2(freq), "owner_share": r2(share), "gain_db": r2(gain)})
+            gain = float(10 * math.log10(inner) if inner > 0 else -6.0)
+            plugin = "HighShelfFilter" if center == 16000 else "PeakFilter"
+            # One filter per source and frequency: later passes adjust it instead of stacking new ones, and its total
+            # stays within +-6 dB, so no pass can build a narrow resonance.
+            existing = next((i for i in self.bus(owner)["inserts"] if i.get("profile") and i["plugin"] == plugin
+                             and abs(math.log2(i["settings"]["cutoff_frequency_hz"] / freq)) <= 1 / 3), None)
+            before = existing["settings"]["gain_db"] if existing else 0.0
+            total = float(np.clip(before + gain, -6, 6))
+            if total > 0 and freq < 200:
+                # A source's low-end profile boosts share one 6 dB budget, so neighbouring bells cannot add up.
+                others = sum(max(0.0, i["settings"]["gain_db"]) for i in self.bus(owner)["inserts"]
+                             if i.get("profile") and i is not existing and i["settings"]["cutoff_frequency_hz"] < 200)
+                total = min(total, max(before, 6.0 - others))
+            move = self.MOVES.get((owner, 1 if total > 0 else -1), f"{owner}.tone")
+            q = (4.0 if third_band else 2.0 if total > 0 else 1.4) if plugin == "PeakFilter" else 0.707
+            if existing:
+                existing["settings"]["gain_db"] = round(total, 2)
+                existing["settings"]["q"] = max(existing["settings"]["q"], q)
+                existing["id"] = move
+            else:
+                existing = {"id": move, "profile": True, "plugin": plugin,
+                            "settings": {"cutoff_frequency_hz": round(freq, 1), "gain_db": round(total, 2), "q": q}}
+                self.bus(owner)["inserts"].append(existing)
+            self.log(move, owner, "kept" if total != before else "dropped: at its 6 dB limit", {"band": field, "value": entry["value"],
+                     "range": [entry["min"], entry["max"]], "hz": r2(freq), "owner_share": r2(share), "asked_db": r2(gain), "total_db": r2(total)})
+            rest = before + gain - total
+            if center == 16000 and rest > 0:
+                # mix-bus.tone: a high shelf on the whole mix takes what the cymbals' shelf cannot, up to 3 dB.
+                inserts = self.recipe["mix"]["inserts"]
+                shelf = next((i for i in inserts if i["id"] == "mix-bus.tone" and i["plugin"] == "HighShelfFilter"), None)
+                if shelf is None:
+                    shelf = {"id": "mix-bus.tone", "plugin": "HighShelfFilter", "settings": {"cutoff_frequency_hz": 10000.0, "gain_db": 0.0, "q": 0.707}}
+                    inserts.insert(0, shelf)
+                old_gain = shelf["settings"]["gain_db"]
+                shelf["settings"]["gain_db"] = round(float(np.clip(old_gain + rest, -3, 3)), 2)
+                self.log("mix-bus.tone", "mix", "kept" if shelf["settings"]["gain_db"] != old_gain else "dropped: at its 3 dB limit",
+                         {"band": field, "asked_db": r2(rest), "total_db": shelf["settings"]["gain_db"]})
 
     # Stage 9: the mix bus: section loudness, glue, and the fade at the cut.
     def mix_stage(self, pool):
@@ -1100,7 +1214,7 @@ class Engineer:
             over = float(np.percentile(levels, 95) - np.median(levels))
             needed = base["dip_db"][name] > 2 or over > 3
             tried, best = [], None
-            for depth in (2.0, 4.0, 6.0) if needed else ():
+            for depth in ((1.5, 3.0) if plugin == "ZL Limiter" else (2.0, 4.0, 6.0)) if needed else ():
                 if plugin == "Clipping":
                     insert = {"id": move, "plugin": "Clipping", "settings": {"threshold_db": round(peak - depth, 2)}}
                 else:
@@ -1136,18 +1250,21 @@ class Engineer:
         check = self.profile_check(master)
         tone = []
         for field, entry in check.items():
-            if not field.startswith("bands_db.") or entry["outside"] == 0:
+            # Only small residuals: a band far outside is a source decision the mix passes already made (see their logs).
+            if not field.startswith("bands_db.") or entry["outside"] == 0 or abs(entry["outside"]) > 1.5:
                 continue
             gain = float(np.clip(-entry["outside"] - math.copysign(0.5, entry["outside"]), -1, 1))
             # One octave wide, so neighbouring corrections of opposite sign do not cancel.
-            tone.append({"id": "master.tone", "plugin": "PeakFilter", "settings": {"cutoff_frequency_hz": float(field.split(".", 1)[1]),
-                                                                                   "gain_db": round(gain, 2), "q": 1.4}})
+            center = float(field.split(".", 1)[1])
+            plugin = "HighShelfFilter" if center == 16000 else "PeakFilter"
+            tone.append({"id": "master.tone", "plugin": plugin, "settings": {"cutoff_frequency_hz": 10000.0 if center == 16000 else center,
+                                                                              "gain_db": round(gain, 2), "q": 0.707 if center == 16000 else 1.4}})
         tried = []
         if tone:
             _, after, _, _ = self.trial(mix, mix_key, extra=tone)
             new = self.profile_check(after)
             moved = {f: (check[f]["outside"], new[f]["outside"]) for f in check if f.startswith("bands_db.")}
-            ok = all(abs(b) <= abs(a) - 0.5 or b == 0 for a, b in moved.values() if a != 0) and \
+            ok = all(abs(b) <= abs(a) - 0.5 or b == 0 for a, b in moved.values() if 0 < abs(a) <= 1.5) and \
                 all(b == 0 for a, b in moved.values() if a == 0)
             tried.append({"inserts": [t["settings"] for t in tone], "outside_before_after": moved, "kept": ok})
             if not ok:
