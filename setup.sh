@@ -4,3 +4,4 @@ cd "$(dirname "$0")"
 
 mise install
 mise exec -- uv sync --locked
+mise exec -- uv run tools/plugins.py

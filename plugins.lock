@@ -1,0 +1,34 @@
+# The exact plugins the pipeline loads. ./setup.sh installs them into plugins/ and stops on any hash mismatch.
+# sha256 is the downloaded file; bundle_sha256 is the installed .vst3 (tools/prepared.py bundle_hash).
+
+[[plugin]]
+name = "ZL Equalizer 2"
+version = "1.4.1"
+license = "AGPL-3.0"
+url = "https://github.com/ZL-Audio/ZLEqualizer/releases/download/1.4.1/ZL.Equalizer.2-1.4.1-macOS-arm64.dmg"
+sha256 = "770167ead54bccdbac5ad3a2f6bc844013808247fa633c434f39140fef085c2d"
+bundle_sha256 = "76ef9726b7f4fc984f4f37a54fd5518136e2b7bec0f64562387b1ff07d1fcb06"
+
+[[plugin]]
+name = "ZL Compressor"
+version = "0.6.1"
+license = "AGPL-3.0"
+url = "https://github.com/ZL-Audio/ZLCompressor/releases/download/0.6.1/ZL.Compressor-0.6.1-macOS-arm64.dmg"
+sha256 = "7a38ed5a54aea2300ee430decbd261d5c6539573ff6e7d56071bc49ce3d6df0d"
+bundle_sha256 = "77c6507314372908181a64f10a232cf2714870b0437acbf669373c0473838946"
+
+[[plugin]]
+name = "ZL Limiter"
+version = "0.0.1"
+license = "AGPL-3.0"
+url = "https://github.com/ZL-Audio/ZLLimiter/releases/download/0.0.1/ZL.Limiter-0.0.1-macOS-arm64.dmg"
+sha256 = "557dab324f094b146215858910ce3081c5659e33f47d3b623066d865d1b6e275"
+bundle_sha256 = "ba4bcfd2fc2add1babc505c0f7394046f3b65b5b217247a7e933bc1dd3eb8eb8"
+
+[[plugin]]
+name = "DragonflyPlateReverb"
+version = "3.2.10"
+license = "GPL-3.0"
+url = "https://github.com/michaelwillis/dragonfly-reverb/releases/download/3.2.10/dragonfly-reverb-3.2.10-macos-universal.dmg"
+sha256 = "e0b854b92a4e51ce5851320fb1a9f91ab1a4309f997de070e175b3e5cab4adaf"
+bundle_sha256 = "ebfd3a0cb548a510a0b05910a18a79e7f7f233096e395c029d0e768178bca17f"

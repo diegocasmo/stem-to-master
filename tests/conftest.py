@@ -8,9 +8,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "tools"))
 
 RATE = 44100
 
-# plugins/ is copied from the owner's machine and git-ignored, so CI has none.
 needs_plugins = pytest.mark.skipif(
-    not any((Path(__file__).resolve().parents[1] / "plugins").glob("*.vst3")), reason="plugins/ not present"
+    not any((Path(__file__).resolve().parents[1] / "plugins").glob("*.vst3")), reason="plugins/ not installed: run ./setup.sh"
 )
 
 
