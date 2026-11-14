@@ -2,10 +2,16 @@ import sys
 from pathlib import Path
 
 import numpy as np
+import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "tools"))
 
 RATE = 44100
+
+# plugins/ is copied from the owner's machine and git-ignored, so CI has none.
+needs_plugins = pytest.mark.skipif(
+    not any((Path(__file__).resolve().parents[1] / "plugins").glob("*.vst3")), reason="plugins/ not present"
+)
 
 
 def kicks(seconds, every_s=0.5, freq=55.0, level=0.5):
