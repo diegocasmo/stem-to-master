@@ -32,20 +32,19 @@ def check(name, what, expected, actual):
 
 def download(entry, folder):
     path = folder / hashlib.sha256(entry["url"].encode()).hexdigest()[:16]
-    # Several bundles can come from one vendor archive; a file here was fetched and checked earlier this run.
-    if path.exists():
-        return path
-    part = path.with_suffix(".part")
-    try:
-        # Some vendors refuse Python's default user agent.
-        request = urllib.request.Request(entry["url"], headers={"User-Agent": "curl/8.7.1"})
-        with urllib.request.urlopen(request, timeout=300) as response, part.open("wb") as out:
-            shutil.copyfileobj(response, out)
-    except (OSError, http.client.HTTPException) as error:
-        fail(entry["name"], f"download failed from {entry['url']} ({error!r}), expected sha256 {entry['sha256']}, actual none")
-    with part.open("rb") as source:
+    # Several bundles can come from one vendor archive: it is fetched once per run, but every entry checks its hash.
+    if not path.exists():
+        part = path.with_suffix(".part")
+        try:
+            # Some vendors refuse Python's default user agent.
+            request = urllib.request.Request(entry["url"], headers={"User-Agent": "curl/8.7.1"})
+            with urllib.request.urlopen(request, timeout=300) as response, part.open("wb") as out:
+                shutil.copyfileobj(response, out)
+        except (OSError, http.client.HTTPException) as error:
+            fail(entry["name"], f"download failed from {entry['url']} ({error!r}), expected sha256 {entry['sha256']}, actual none")
+        part.rename(path)
+    with path.open("rb") as source:
         check(entry["name"], "download sha256", entry["sha256"], hashlib.file_digest(source, "sha256").hexdigest())
-    part.rename(path)
     return path
 
 
@@ -67,11 +66,12 @@ def kind(path):
 
 def unpack(entry, path, out):
     """One zip, dmg or pkg into out, without running an installer or its scripts."""
-    if kind(path) == "pkg":
+    found = kind(path)
+    if found == "pkg":
         run(entry, "pkgutil", "--expand-full", path, out)
         return
     out.mkdir(parents=True)
-    if kind(path) == "zip":
+    if found == "zip":
         run(entry, "ditto", "-x", "-k", path, out)
         return
     mount = out.with_name(out.name + ".mount")

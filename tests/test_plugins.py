@@ -52,3 +52,18 @@ def test_a_bundle_in_a_pkg_in_a_zip_named_like_a_script_installs(tmp_path, monke
     monkeypatch.setattr(plugins.urllib.request, "urlopen", lambda *a, **k: io.BytesIO(archive.read_bytes()))
     assert plugins.install(entry) == "installed"
     assert (tmp_path / "plugins" / "Fake.vst3" / "Contents" / "binary").read_bytes() == b"fake plugin"
+
+
+def test_every_entry_checks_the_hash_of_a_shared_download(tmp_path, monkeypatch):
+    calls = []
+
+    def fetch(*a, **k):
+        calls.append(1)
+        return io.BytesIO(b"vendor archive")
+
+    monkeypatch.setattr(plugins.urllib.request, "urlopen", fetch)
+    good = dict(ENTRY, sha256=hashlib.sha256(b"vendor archive").hexdigest())
+    assert plugins.download(good, tmp_path).read_bytes() == b"vendor archive"
+    with pytest.raises(SystemExit, match="plugin Second: download sha256 mismatch"):
+        plugins.download(dict(good, name="Second", sha256="0" * 64), tmp_path)
+    assert len(calls) == 1
