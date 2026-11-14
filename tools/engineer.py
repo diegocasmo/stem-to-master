@@ -943,7 +943,8 @@ class Engineer:
             fills = meters.windows(toms.shape[1], times, self.rate, (-50, 600))
             if fills.sum() > self.rate * 0.3:
                 t_level, g_level = self.loud(toms, fills), self.loud(self.post_fader(mixer, ref), fills)
-                self.bus("toms")["fader_db"] = round(-3.0 + g_level - t_level, 2)
+                # Toms that barely play (bleed found as hits) are not pushed up to the guitars.
+                self.bus("toms")["fader_db"] = round(float(np.clip(-3.0 + g_level - t_level, -12, 6)), 2)
                 self.log("balance.fader", "toms", "kept", {"toms_lufs_in_fills": r2(t_level), "reference_lufs_in_fills": r2(g_level),
                                                            "fader_db": self.bus("toms")["fader_db"]})
 
@@ -953,7 +954,7 @@ class Engineer:
         return kick, snare
 
     def punch_faders(self, mixer, targets=None):
-        """Kick and snare faders move (at most 6 dB over or 3 dB under the static balance) until their hits stand out of
+        """Kick and snare faders move (at most 6 dB either side of the static balance) until their hits stand out of
         the mix by the target. A fader whose travel does not move the measure (wrong hits) stays where it is."""
         kick_s, snare_s = self.drum_times(mixer)
         self.kick_s, self.snare_s = kick_s, snare_s
@@ -966,22 +967,18 @@ class Engineer:
             base = self.static_faders.get(name, start)
             tried = []
             chosen = start
-            for step in [0, 1, 2, 3, 4, 5, 6, -1, -2, -3]:
+            for step in [0, 1, 2, 3, 4, 5, 6, -1, -2, -3, -4, -5, -6]:
                 # At most 6 dB over and 3 dB under the static balance, however many passes run.
-                if not -3 <= start + step - base <= 6:
+                if not -6 <= start + step - base <= 6:
                     continue
                 faders = {name: start + step}
                 found = punch_of(self.mix_of(mixer, faders), self.rate, kick_s, snare_s)[key]
                 tried.append({"step_db": step, key: found})
             ups = [t for t in tried if t["step_db"] >= 0]
-            downs = [t for t in tried if t["step_db"] <= 0]
             if ups[-1][key] - tried[0][key] < 1.0 and tried[0][key] < target:
                 reach = tried[0]
-            elif tried[0][key] < target:
-                reach = next((t for t in ups if t[key] >= target), ups[-1])
             else:
-                # Already above: come down only while it stays above the target.
-                reach = next((t for t in reversed(downs) if t[key] >= target), tried[0])
+                reach = min(tried, key=lambda t: (abs(t[key] - target), abs(t["step_db"])))
             chosen = start + reach["step_db"]
             self.bus(name)["fader_db"] = round(chosen, 2)
             self.log("balance.punch", name, "kept" if reach["step_db"] else "dropped: on target",
@@ -1065,6 +1062,9 @@ class Engineer:
             if not self.has(name):
                 continue
             base_punch = punch_of(self.mix_of(mixer, replace=replaced), rate, kick_hits / rate, [])["kick_low"]
+            if base_punch is not None and base_punch >= self.KICK_LOW_PROMINENCE:
+                self.log(f"kick.duck-{name}", name, "dropped: not needed", {"kick_low": base_punch, "rule_db": self.KICK_LOW_PROMINENCE})
+                continue
             pf = self.post_fader(mixer, name)
             held0 = meters.masked_band_db(pf, rate, 40, 150, between)
             tried, kept = [], None
