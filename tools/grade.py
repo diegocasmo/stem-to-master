@@ -21,6 +21,8 @@ from punch import bandpass, db, env, prominence, side_mid, tail
 OCTAVES = [31.5, 63, 125, 250, 500, 1000, 2000, 4000, 8000, 16000]
 THIRDS = [10000, 12500]
 WIDTH_BANDS = [(120, 500), (500, 2000), (2000, 8000)]
+MIN_SCORED_S = 8.0
+MIN_HITS = 8
 TOL = {"band": 2.0, "punch": 1.5, "width": 1.5}
 HISTORY = Path.home() / "stemmaster-scratch" / "night" / "grades.jsonl"
 
@@ -187,29 +189,39 @@ def grade(song, master_path=None):
         frames_ = env(x, rate)
         return db(np.percentile(frames_, 99.5)) - db(frames_.mean())
     crest_gap = r2(crest(ours) - crest(official))
+    def judge(band_items, punch_items):
+        gates = {"bands": all(abs(v) <= TOL["band"] for v in band_items),
+                 "kick": all(abs(v) <= TOL["punch"] for k, v in punch_items if k.startswith("kick")),
+                 "snare": all(abs(v) <= TOL["punch"] for k, v in punch_items if k.startswith("snare")),
+                 "width": all(abs(v) <= TOL["width"] for v in width.values())}
+        excess = (sum(max(0, abs(v) - TOL["band"]) for v in band_items) + sum(max(0, abs(v) - TOL["punch"]) for _, v in punch_items)
+                  + sum(max(0, abs(v) - TOL["width"]) for v in width.values()))
+        total = (sum(abs(v) for v in band_items) / TOL["band"] + sum(abs(v) for _, v in punch_items) / TOL["punch"]
+                 + sum(abs(v) for v in width.values()) / TOL["width"])
+        return gates, excess, total
+
     punch_keys = [k for k in ("kick_low", "kick_click", "snare_body", "snare_crack") if punch.get(k) is not None]
-    band_vals = [v for v in bands.values() if v is not None]
-    gates = {"bands": max(abs(v) for v in band_vals) <= TOL["band"],
-             "kick": all(abs(punch[k]) <= TOL["punch"] for k in punch_keys if k.startswith("kick")),
-             "snare": all(abs(punch[k]) <= TOL["punch"] for k in punch_keys if k.startswith("snare")),
-             "width": all(abs(v) <= TOL["width"] for v in width.values())}
-    excess = (sum(max(0, abs(v) - TOL["band"]) for v in band_vals)
-              + sum(max(0, abs(punch[k]) - TOL["punch"]) for k in punch_keys)
-              + sum(max(0, abs(v) - TOL["width"]) for v in width.values()))
-    total = (sum(abs(v) for v in band_vals) / TOL["band"] + sum(abs(punch[k]) for k in punch_keys) / TOL["punch"]
-             + sum(abs(v) for v in width.values()) / TOL["width"])
+    strict = judge([v for v in bands.values() if v is not None], [(k, punch[k]) for k in punch_keys])
+    # A band scored on under 8 s, or a punch on under 8 hits, is reported but does not gate: 5 hits are not a measure.
+    confident = judge([v for k, v in bands.items() if v is not None and scored[k] >= MIN_SCORED_S],
+                      [(k, punch[k]) for k in punch_keys if raw[k][2] >= MIN_HITS])
+    low_confidence = [k for k, v in bands.items() if v is not None and scored[k] < MIN_SCORED_S] + \
+                     [k for k in punch_keys if raw[k][2] < MIN_HITS]
+    gates, excess, total = confident
     return {"song": song.name, "scored_s_by_octave": scored, "align_lag_samples": lag, "match_gain_db": r2(gain_db),
             "bands": bands, "thirds": thirds, "low_thirds": low_thirds,
             "punch": punch, "punch_raw_ours_official_n": raw, "width": width, "side_mid_ours_official": width_abs,
             "lowmid_160": lowmid, "crest": crest_gap, "gates": gates, "pass": all(gates.values()),
-            "excess": r2(excess), "total": r2(total)}
+            "excess": r2(excess), "total": r2(total), "low_confidence": low_confidence,
+            "pass_strict": all(strict[0].values()), "excess_strict": r2(strict[1]), "total_strict": r2(strict[2])}
 
 
 def line(g):
     b = " ".join(f"{k}:{v:+.1f}" if v is not None else f"{k}:-" for k, v in g["bands"].items())
     p = " ".join(f"{k}:{v:+.1f}" for k, v in g["punch"].items() if v is not None)
     w = " ".join(f"{k}:{v:+.1f}" for k, v in g["width"].items())
-    return (f"{g['song'][:24]:24s} pass={g['pass']!s:5s} excess={g['excess']:5.1f} total={g['total']:5.1f}\n"
+    return (f"{g['song'][:24]:24s} pass={g['pass']!s:5s} excess={g['excess']:5.1f} total={g['total']:5.1f} "
+            f"| strict pass={g['pass_strict']!s:5s} excess={g['excess_strict']:5.1f} low-confidence {g['low_confidence']}\n"
             f"  bands {b}\n  scored_s {g['scored_s_by_octave']}\n  hi-thirds {g['thirds']}  lowmid160 {g['lowmid_160']}  crest {g['crest']}\n"
             f"  punch {p}\n  width {w}")
 
@@ -227,7 +239,9 @@ def main():
     summary = {"time": time.strftime("%Y-%m-%d %H:%M"), "label": args.label,
                "excess_sum": r2(sum(g["excess"] for g in results)), "total_sum": r2(sum(g["total"] for g in results)),
                "results": results}
-    print(f"SUM excess={summary['excess_sum']} total={summary['total_sum']} all_pass={all(g['pass'] for g in results)}")
+    summary["excess_strict_sum"] = r2(sum(g["excess_strict"] for g in results))
+    print(f"SUM excess={summary['excess_sum']} total={summary['total_sum']} all_pass={all(g['pass'] for g in results)} "
+          f"| strict excess={summary['excess_strict_sum']} all_pass={all(g['pass_strict'] for g in results)}")
     if not args.no_log:
         HISTORY.parent.mkdir(parents=True, exist_ok=True)
         with HISTORY.open("a") as f:

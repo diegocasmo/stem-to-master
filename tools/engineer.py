@@ -443,6 +443,7 @@ class Engineer:
     LOWMID_BUILDUP_DB = 2.5
     AIR_TILT_DB = -10.5
     PRESENCE_TILT_DB = -2.0
+    TOP_TILT_DB = -10.3
     KICK_CLICK_PROMINENCE = 5.0
     SNARE_CRACK_PROMINENCE = 7.0
     SUB_TILT_DB = -6.3
@@ -958,6 +959,8 @@ class Engineer:
                   lambda g: {"plugin": "PeakFilter", "settings": {"cutoff_frequency_hz": 3000.0, "gain_db": g, "q": 0.7}}, (1.5, 3.0, 4.5, 6.0))
         self.tilt(self.rendered(pool), "air", (8000, 16000), (1000, 4000), self.AIR_TILT_DB, 1,
                   lambda g: {"plugin": "HighShelfFilter", "settings": {"cutoff_frequency_hz": 7000.0, "gain_db": g, "q": 0.707}}, (2.0, 4.0, 6.0))
+        self.tilt(self.rendered(pool), "top", (11300, 16000), (5600, 11300), self.TOP_TILT_DB, 1,
+                  lambda g: {"plugin": "HighShelfFilter", "settings": {"cutoff_frequency_hz": 12000.0, "gain_db": g, "q": 0.707}}, (2.0, 4.0, 6.0))
         self.attack_eq(self.rendered(pool), "kick", "kick.click", "kick_click", 4000.0, self.KICK_CLICK_PROMINENCE)
         self.attack_eq(self.rendered(pool), "snare", "snare.crack", "snare_crack", 5000.0, self.SNARE_CRACK_PROMINENCE)
 
