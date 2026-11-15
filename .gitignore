@@ -11,4 +11,3 @@ __pycache__/
 *.npy
 .DS_Store
 *.local.*
-songs/*.run.log
