@@ -32,12 +32,13 @@ ZL_COMP = "ZL Compressor"
 
 
 def filter_eq(kind, freq, order):
-    """A FreeEQ high-pass (kind "hp") or low-pass ("lp") at freq Hz, order 6, 12, 24 or 48 dB/oct. Its frequency knob
-    is unitless, 20 Hz to 20 kHz on a log scale in 0.002 steps, so the recipe holds the value it renders; resonance
-    0.5 puts the cutoff at -3 dB."""
+    """A FreeEQ high-pass (kind "hp") or low-pass ("lp") at freq Hz, order 12 or 24 dB/oct (the slopes measured). Its
+    frequency knob is unitless, 20 Hz to 20 kHz on a log scale in 0.002 steps, so the cutoff is held in that range and
+    the recipe holds the value it renders; resonance 0.5 puts the cutoff at -3 dB."""
+    freq = min(max(freq, 20.0), 20000.0)
     knob = round(round((2 * math.log10(freq / 20) / 3 - 1) / 0.002) * 0.002, 3)
     return {"band_1_enabled": True, "band_1_type": 1.0 if kind == "hp" else 7.0, "band_1_frequency": knob,
-            "band_1_slope": {6: 0.0, 12: 1.0, 24: 2.0, 48: 3.0}[order], "band_1_resonance": 0.5}
+            "band_1_slope": {12: 1.0, 24: 2.0}[order], "band_1_resonance": 0.5}
 
 
 def zl_comp(threshold, ratio, attack, release, knee=6.0, style="Clean"):

@@ -4,7 +4,7 @@ Goal: a solid, even low end that locks with the kick, and a growl in the mids th
 
 ### bass.hpf
 - **Why:** rumble below the lowest note eats headroom. A part that mostly plays under drop D puts its fundamentals in the sub, where few speakers play them and they cost the limiter headroom, so the bass gives those up and the second harmonic carries the notes. A part that only dips there keeps them.
-- **Start:** the lowest note is the 3rd percentile of the notes' fundamentals (`notes.py`; 41 Hz if none found), the typical note their median. If the typical note is under `SUB_NOTE_HZ` 35 Hz, a 24 dB/oct high-pass at `SUB_HPF_HZ` 41 Hz (the standard low E); else at 0.7 × the lowest note.
+- **Start:** the lowest note is the 3rd percentile of the notes' fundamentals (`notes.py`; 41 Hz if none found), the typical note their median. If the typical note is under `SUB_NOTE_HZ` 35 Hz, a 24 dB/oct high-pass at `SUB_HPF_HZ` 41 Hz (the standard low E); else at 0.7 × the lowest note (20 Hz at least, the filter's floor).
 - **Tool:** `FreeEQ`.
 - **Needed if:** the typical note is under `SUB_NOTE_HZ`; else energy in 15 Hz to 0.85 × the lowest note is within 10 dB of the lowest note's band (0.9 to 1.12 × it).
 - **Worked if:** the band under the cutoff (15 Hz to `SUB_NOTE_HZ`, or to 0.7 × the lowest note) falls by at least 1 dB, and the band that carries the note holds within 1 dB (1.9 to 3.2 × the typical note when it is under `SUB_NOTE_HZ`, else 0.95 to 1.6 × the lowest note).

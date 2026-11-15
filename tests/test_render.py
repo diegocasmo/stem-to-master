@@ -57,3 +57,9 @@ def test_a_bundle_not_in_plugins_lock_does_not_load(tmp_path, monkeypatch):
     monkeypatch.setattr(daw, "PLUGINS", tmp_path)
     with pytest.raises(ValueError, match="plugins.lock"):
         daw.load("Unlocked", {})
+
+
+@needs_plugins
+def test_a_bass_cutoff_under_20_hz_still_sets_the_filter():
+    # A part that dips under drop D asks 0.7 x its lowest note, which can fall under FreeEQ's 20 Hz floor.
+    daw.load("FreeEQ", filter_eq("hp", 19.2, 24))
