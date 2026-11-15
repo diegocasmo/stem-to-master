@@ -23,6 +23,13 @@ Goal: a solid, even low end that locks with the kick, and a growl in the mids th
 - **Needed if:** note levels spread more than 3 dB (p90 minus p10, more than 4 notes) over the whole song.
 - **Worked if:** the spread of the energy in the 100 ms after each note onset falls by more than 0.5 dB.
 
+### bass.saturate
+- **Why:** small speakers play a bass through its harmonics. A bass with little between 700 Hz and 2 kHz disappears on them, so a parallel crush adds that band.
+- **Start:** after the compressor, the bass is staged to -1 dBFS peak, then a bit crush at 8, 6, then 4 bits (intensity 12, mix 30 %), then the level comes back. The first depth that passes is kept.
+- **Tool:** `Gain`, `FreeCrush`, `Gain`.
+- **Needed if:** the bass's 700 Hz-2 kHz is more than `GROWL_DB` 20 dB under its 40-200 Hz.
+- **Worked if:** that difference rises by at least 2 dB and the note spread (as bass.compress measures it) rises by at most 0.5 dB.
+
 ## Not built
 
 - bass.align: not built yet; two bass tracks are summed as recorded.
@@ -30,7 +37,6 @@ Goal: a solid, even low end that locks with the kick, and a growl in the mids th
 - bass.mud-cut: lowmid.cut (context.md) cuts a build-up on the bass when it owns it.
 - bass.growl: no song needed it yet.
 - bass.multiband: no song needed it yet.
-- bass.saturate: no song needed it yet.
 - bass.chorus: no song needed it yet.
 - bass.limit: no song needed it yet.
 
