@@ -15,6 +15,6 @@ Mix and master a song from its aligned stems like an engineer in a DAW, to sound
 ## Workflow
 
 - One change per PR: a branch from latest origin/main, assigned to diegocasmo, squash merged. Never force push.
-- Merge gate: `uv run pytest` passes. A change to render, engineer or grade also needs: all 4 benchmark songs graded (before and after per song in the PR), no song clearly worse, total confident excess holds or improves, and a cold 90 s run of 000 under 5 minutes.
+- Merge gate: `uv run pytest` passes. A change to render, engineer or grade also needs: all 4 benchmark songs graded (before and after per song in the PR), no song's grade up more than 0.3, and each 30 s benchmark song rendering cold in under 100 s (the 5-minute pace for a 1:30 song).
 - Then one review by Claude and Codex: only P1/P2 block; P3 and style become issues. At most 2 rounds.
 - Audio stays on this Mac: never commit, upload or attach it.
