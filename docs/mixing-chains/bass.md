@@ -18,8 +18,8 @@ Goal: a solid, even low end that locks with the kick, and a growl in the mids th
 
 ### bass.compress
 - **Why:** a heavy-music bass must be almost flat in level so the low end is solid.
-- **Start:** one compressor after the high-pass: threshold the median note level -8 dB, 4:1, attack 3 ms, release 60 ms, knee 6 dB, style Clean.
-- **Tool:** `ZL Compressor`.
+- **Start:** one compressor after the high-pass: threshold the median note level -8 dB, 4:1, attack 3 ms, release 60 ms, hard knee (ZamCompX2 4.5's soft knee lifts the level under the threshold), no makeup.
+- **Tool:** `ZamCompX2`.
 - **Needed if:** note levels spread more than 3 dB (p90 minus p10, more than 4 notes) over the whole song.
 - **Worked if:** the spread of the energy in the 100 ms after each note onset falls by more than 0.5 dB.
 
