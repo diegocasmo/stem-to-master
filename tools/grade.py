@@ -25,7 +25,6 @@ TOL = {"band": 2.0, "punch": 1.5, "width": 1.5}
 # A hit is scored when adding the raw vocals to the raw instruments moves its prominence by at most this much, under a
 # third of the punch tolerance. Prominence is tested itself, so a vocal in the attack peak or in the median around it counts.
 HIT_VOCAL_BIAS_DB = 0.4
-HISTORY = Path.home() / "stemmaster-scratch" / "night" / "grades.jsonl"
 
 
 def r2(x):
@@ -258,7 +257,6 @@ def main():
     parser.add_argument("songs", nargs="+")
     parser.add_argument("--master")
     parser.add_argument("--label", default="")
-    parser.add_argument("--no-log", action="store_true")
     args = parser.parse_args()
     results = [grade(s, args.master) for s in args.songs]
     for g in results:
@@ -269,10 +267,6 @@ def main():
     summary["excess_strict_sum"] = r2(sum(g["excess_strict"] for g in results))
     print(f"SUM excess={summary['excess_sum']} total={summary['total_sum']} all_pass={all(g['pass'] for g in results)} "
           f"| strict excess={summary['excess_strict_sum']} all_pass={all(g['pass_strict'] for g in results)}")
-    if not args.no_log:
-        HISTORY.parent.mkdir(parents=True, exist_ok=True)
-        with HISTORY.open("a") as f:
-            f.write(json.dumps(summary) + "\n")
 
 
 if __name__ == "__main__":
