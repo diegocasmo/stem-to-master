@@ -12,21 +12,21 @@ Goal: clear, wide cymbals that never get harsh, and a room that adds size withou
 ### overheads.hpf
 - **Why:** the low end in overheads is drum spill that blurs the close mics and fights the kick.
 - **Start:** a 12 dB/oct high-pass at 150 Hz, then 220 Hz.
-- **Tool:** `ZL Equalizer 2`.
+- **Tool:** `FreeEQ`.
 - **Needed if:** the overheads' 20-250 Hz is within 10 dB of their 2-8 kHz.
 - **Worked if:** 20-150 Hz falls by at least 3 dB and 2-8 kHz holds within 0.5 dB.
 
 ### overheads.close-hpf
 - **Why:** a hat, ride or cymbal close mic is there for detail; its low end is snare and kick spill.
 - **Start:** a 12 dB/oct high-pass at 400 Hz.
-- **Tool:** `ZL Equalizer 2`.
+- **Tool:** `FreeEQ`.
 - **Needed if:** always tried on hat, ride and cymbal close mics.
 - **Worked if:** 20-300 Hz falls by at least 3 dB and 4-12 kHz holds within 0.5 dB.
 
 ### overheads.room-blend.lpf
 - **Why:** room mics give the kit size, but their cymbal spill adds wash in fast music.
 - **Start:** a 12 dB/oct low-pass at 7 kHz on the room mic.
-- **Tool:** `ZL Equalizer 2`.
+- **Tool:** `FreeEQ`.
 - **Needed if:** the room's 6-20 kHz is within 20 dB of its full band (20 Hz-20 kHz).
 - **Worked if:** 6-20 kHz falls by more than 3 dB.
 

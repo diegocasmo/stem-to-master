@@ -28,24 +28,17 @@ HOLD_DB = 0.5
 SUB_NOTE_HZ = 35.0
 # The standard low E (41.2 Hz): with notes under drop D, the bass gives up the fundamentals under it.
 SUB_HPF_HZ = 41.0
-ZL_EQ = "ZL Equalizer 2"
 ZL_COMP = "ZL Compressor"
 
 
-def zl_eq(*bands):
-    """ZL Equalizer 2 settings for bands given as dicts: type, freq, gain, q, order, mode."""
-    settings = {}
-    for index, band in enumerate(bands):
-        settings |= {
-            f"filter_status{index}_filter_status": "On",
-            f"filter_type{index}_filter_type": band["type"],
-            f"order{index}_order": band.get("order", "12 dB/oct"),
-            f"lrmode{index}_lrmode": band.get("mode", "Stereo"),
-            f"freq{index}_freq": float(band["freq"]),
-            f"gain{index}_gain": float(band.get("gain", 0.0)),
-            f"q{index}_q": float(band.get("q", 0.707)),
-        }
-    return settings
+def filter_eq(kind, freq, order):
+    """A FreeEQ high-pass (kind "hp") or low-pass ("lp") at freq Hz, order 12 or 24 dB/oct (the slopes measured). Its
+    frequency knob is unitless, 20 Hz to 20 kHz on a log scale in 0.002 steps, so the cutoff is held in that range and
+    the recipe holds the value it renders; resonance 0.5 puts the cutoff at -3 dB."""
+    freq = min(max(freq, 20.0), 20000.0)
+    knob = round(round((2 * math.log10(freq / 20) / 3 - 1) / 0.002) * 0.002, 3)
+    return {"band_1_enabled": True, "band_1_type": 1.0 if kind == "hp" else 7.0, "band_1_frequency": knob,
+            "band_1_slope": {12: 1.0, 24: 2.0}[order], "band_1_resonance": 0.5}
 
 
 def zl_comp(threshold, ratio, attack, release, knee=6.0, style="Clean"):
@@ -129,7 +122,7 @@ def hits_change(node, out, key):
             "bleed_change": r2(after["bleed_db"]["all"] - before["bleed_db"]["all"])}
 
 
-def steep_hpf(node, move, cutoff_candidates, low_band, keep_band, order="24 dB/oct", fall_db=1.0, hold_db=HOLD_DB):
+def steep_hpf(node, move, cutoff_candidates, low_band, keep_band, order=24, fall_db=1.0, hold_db=HOLD_DB):
     """A steep high-pass, kept if the energy below falls and the band to keep holds."""
     below, keep = node.band(*low_band), node.band(*keep_band)
 
@@ -138,7 +131,7 @@ def steep_hpf(node, move, cutoff_candidates, low_band, keep_band, order="24 dB/o
         ok = below - b >= fall_db and keep - k <= hold_db
         return ok, {"below_change": r2(b - below), "keep_change": r2(k - keep)}
 
-    return [{"plugin": ZL_EQ, "settings": zl_eq({"type": "High Pass", "freq": f, "order": order})} for f in cutoff_candidates], judge, \
+    return [{"plugin": "FreeEQ", "settings": filter_eq("hp", f, order)} for f in cutoff_candidates], judge, \
         {"below_db": r2(below), "keep_db": r2(keep)}
 
 
@@ -235,7 +228,7 @@ def decide_room(node):
     """overheads.room-blend: low-pass the cymbal spill, cut the mud, then heavy compression with a fast release."""
     cym, total = node.band(6000, 20000), node.band(20, 20000)
     node.attempt("overheads.room-blend.lpf", cym > total - 20, {"above_6k_db": r2(cym), "total_db": r2(total)},
-                 [{"plugin": ZL_EQ, "settings": zl_eq({"type": "Low Pass", "freq": 7000, "order": "12 dB/oct"})}],
+                 [{"plugin": "FreeEQ", "settings": filter_eq("lp", 7000, 12)}],
                  lambda out, key: ((r := node.band(6000, 20000, out, key)) < cym - 3, {"above_6k_change": r2(r - cym)}))
     mud, body = node.band(200, 400), node.band(80, 160)
     eq_cut_if(node, "overheads.room-blend.cut", mud > body - 3, {"200_400_db": r2(mud), "80_160_db": r2(body)}, 300, [-4], 0.8,
@@ -269,12 +262,12 @@ def decide_bass(node, dense):
         # cost the limiter headroom: the high-pass sits at SUB_HPF_HZ and the second harmonic carries those notes. A
         # part that only dips there keeps its fundamentals.
         cands, judge, numbers = steep_hpf(node, "bass.hpf", [SUB_HPF_HZ], (15, SUB_NOTE_HZ), (typical * 1.9, typical * 3.2),
-                                          order="24 dB/oct", fall_db=1, hold_db=1.0)
+                                          order=24, fall_db=1, hold_db=1.0)
         needed = True
         numbers |= {"lowest_f0_hz": r2(lowest), "median_f0_hz": r2(typical)}
     else:
         cands, judge, numbers = steep_hpf(node, "bass.hpf", [round(lowest * 0.7, 1)], (15, lowest * 0.7), (lowest * 0.95, lowest * 1.6),
-                                          order="24 dB/oct", fall_db=1, hold_db=1.0)
+                                          order=24, fall_db=1, hold_db=1.0)
         needed = below > fund - 10
         numbers |= {"lowest_f0_hz": r2(lowest), "median_f0_hz": r2(typical), "fundamental_db": r2(fund)}
     node.attempt("bass.hpf", needed, numbers, cands, judge)
@@ -312,12 +305,12 @@ def decide_guitar(node):
     palm, low = node.band(80, 120), node.band(20, 70)
     best = None
     for cutoff in (100, 80, 60):
-        insert = {"id": "guitars.filters", "plugin": ZL_EQ, "settings": zl_eq({"type": "High Pass", "freq": cutoff, "order": "24 dB/oct"})}
+        insert = {"id": "guitars.filters", "plugin": "FreeEQ", "settings": filter_eq("hp", cutoff, 24)}
         out, key = node.render(insert)
         if palm - node.band(80, 120, out, key) <= 1.0:
             best = cutoff
             break
-    cands = [{"plugin": ZL_EQ, "settings": zl_eq({"type": "High Pass", "freq": best, "order": "24 dB/oct"})}] if best else []
+    cands = [{"plugin": "FreeEQ", "settings": filter_eq("hp", best, 24)}] if best else []
 
     def judge(out, key):
         p, l = node.band(80, 120, out, key), node.band(20, 70, out, key)
@@ -349,14 +342,14 @@ def decide_track(args):
     elif cls == "snare":
         node.hits = meters.detect_hits(audio, rate)
         below, body = node.band(20, 80), node.band(150, 250)
-        cands, judge, numbers = steep_hpf(node, "snare.hpf", [80], (20, 80), (150, 250), order="12 dB/oct")
+        cands, judge, numbers = steep_hpf(node, "snare.hpf", [80], (20, 80), (150, 250), order=12)
         node.attempt("snare.hpf", below > body - 20, numbers | {"body_db": r2(body)}, cands, judge)
     elif cls == "overheads":
         low, cym = node.band(20, 250), node.band(2000, 8000)
-        cands, judge, numbers = steep_hpf(node, "overheads.hpf", [150, 220], (20, 150), (2000, 8000), order="12 dB/oct", fall_db=3)
+        cands, judge, numbers = steep_hpf(node, "overheads.hpf", [150, 220], (20, 150), (2000, 8000), order=12, fall_db=3)
         node.attempt("overheads.hpf", low > cym - 10, numbers | {"cymbal_db": r2(cym)}, cands, judge)
     elif cls in ("hat", "ride", "cymbal"):
-        cands, judge, numbers = steep_hpf(node, "overheads.close-hpf", [400], (20, 300), (4000, 12000), order="12 dB/oct", fall_db=3)
+        cands, judge, numbers = steep_hpf(node, "overheads.close-hpf", [400], (20, 300), (4000, 12000), order=12, fall_db=3)
         node.attempt("overheads.close-hpf", True, numbers, cands, judge)
     elif cls == "room":
         decide_room(node)
@@ -368,7 +361,7 @@ def decide_track(args):
         main = max(((lo, lo * 2) for lo in (125, 250, 500, 1000, 2000, 4000)), key=lambda b: node.band(*b))
         low, total = node.band(20, 150), node.band(20, 20000)
         # The highest cutoff that keeps the part's own main band within 1 dB; even a low one takes the sub rumble out.
-        cands, judge, numbers = steep_hpf(node, "synths.hpf", [150, 120, 80, 50], (20, 45), main, order="12 dB/oct", fall_db=3,
+        cands, judge, numbers = steep_hpf(node, "synths.hpf", [150, 120, 80, 50], (20, 45), main, order=12, fall_db=3,
                                           hold_db=1.0)
         node.attempt("synths.hpf", low > total - 20, numbers | {"total_db": r2(total), "main_band": list(main)}, cands, judge)
     return track["name"], node.inserts, node.decisions

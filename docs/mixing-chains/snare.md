@@ -12,7 +12,7 @@ Goal: a crack that cuts through dense guitars, a body with weight, and hits that
 ### snare.hpf
 - **Why:** removes kick spill below the snare body.
 - **Start:** a 12 dB/oct high-pass at 80 Hz on each snare mic (not samples).
-- **Tool:** `ZL Equalizer 2`.
+- **Tool:** `FreeEQ`.
 - **Needed if:** the mic's 20-80 Hz is within 20 dB of its 150-250 Hz.
 - **Worked if:** 20-80 Hz falls by at least 1 dB and 150-250 Hz holds within 0.5 dB.
 

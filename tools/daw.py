@@ -156,6 +156,10 @@ def apply(audio, rate, insert, keys, sections=None):
     # Some VST3s accept only stereo, so a mono track goes through them as two equal channels.
     signal = np.repeat(audio, 2, axis=0) if mono else audio
     LIBC.srand(RAND_SEED)
+    if isinstance(instance, pedalboard.VST3Plugin):
+        # Some plugins glide from their defaults to the settings over the first ~100 ms; silence lets them arrive
+        # before the first sample, and leaves filter, delay and gate state at zero.
+        instance.process(np.zeros((signal.shape[0], round(0.3 * rate)), np.float32), rate, reset=False)
     out = instance(signal, rate)
     if mono:
         out = out.mean(axis=0, keepdims=True)
