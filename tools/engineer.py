@@ -1074,7 +1074,7 @@ class Engineer:
             self.log("sub.cut", name, "kept" if kept else "dropped: did not work", numbers | {"tried": tried})
 
     def lead_space(self, pool):
-        """A guitar that plays in the middle through the song (a melody or lead, no double) gets a stereo plate on a
+        """A guitar that plays in the middle through the song (a melody or lead, no double) gets a stereo delay on a
         send: the smallest that widens the 500 Hz-2 kHz side/mid by 1.5 dB, else the largest that widens it by 0.5 dB,
         without lifting that band by more than 1 dB."""
         mixer = self.rendered(pool)
@@ -1100,9 +1100,8 @@ class Engineer:
             return meters.side_mid_db(x), meters.db(float((x**2).sum()))
 
         w0, l0 = width(self.mix_of(mixer))
-        self.recipe["buses"].append({"name": "gtr-space", "inserts": [{"id": "guitars.lead-space", "plugin": "DragonflyPlateReverb", "settings": {
-            "dry_level": 0.0, "wet_level": 100.0, "algorithm": "Nested", "width": 100.0, "predelay_ms": 30.0, "decay_s": 1.4,
-            "low_cut_hz": 200.0, "high_cut_hz": 8000.0, "dampen_hz": 6000.0}}], "fader_db": 0.0, "pan": 0, "out": "mix", "sends": []})
+        self.recipe["buses"].append({"name": "gtr-space", "inserts": [{"id": "guitars.lead-space", "plugin": "FreeDelay", "settings": {
+            "wet_level": 1.0, "dry_level": 0.0, "use_beats": False, "msec_delay_l": 250.0, "msec_delay_r": 375.0, "feedback": 0.3}}], "fader_db": 0.0, "pan": 0, "out": "mix", "sends": []})
         tried, kept = [], None
         for send in (-16.0, -12.0, -8.0, -4.0):
             for t in centred:
