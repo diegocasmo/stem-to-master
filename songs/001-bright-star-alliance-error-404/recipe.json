@@ -218,7 +218,7 @@
      "plugin": "ZL Compressor",
      "settings": {
       "compressor_style_compressor_style": "Clean",
-      "threshold_db_threshold_db": -25.8,
+      "threshold_db_threshold_db": -25.7,
       "ratio_ratio": 8.0,
       "attack_attack": 5.0,
       "release_release": 40.0,
@@ -494,7 +494,7 @@
   {
    "name": "room",
    "inserts": [],
-   "fader_db": -0.37,
+   "fader_db": -0.42,
    "pan": 0,
    "out": "drums",
    "sends": []
@@ -1034,19 +1034,19 @@
    "target": "09_DrumsRoom",
    "outcome": "kept",
    "numbers": {
-    "hit_level_p50_db": -13.78,
+    "hit_level_p50_db": -13.75,
     "tried": [
      {
       "settings": {
        "compressor_style_compressor_style": "Clean",
-       "threshold_db_threshold_db": -25.8,
+       "threshold_db_threshold_db": -25.7,
        "ratio_ratio": 8.0,
        "attack_attack": 5.0,
        "release_release": 40.0,
        "knee_width_knee_width": 6.0
       },
-      "tail_p50_db": 4.75,
-      "tail_before_db": 1.45,
+      "tail_p50_db": 4.72,
+      "tail_before_db": 1.41,
       "kept": true
      }
     ]
@@ -1072,7 +1072,7 @@
        "band_1_slope": 2.0,
        "band_1_resonance": 0.5
       },
-      "below_change": -3.95,
+      "below_change": -3.98,
       "keep_change": -0.01,
       "kept": true
      }
@@ -1107,7 +1107,7 @@
        "knee_db": 0.0,
        "makeup_db": 0.0
       },
-      "note_spread_db": 1.74,
+      "note_spread_db": 1.73,
       "kept": true
      }
     ]
@@ -1132,7 +1132,7 @@
        "band_1_resonance": 0.5
       },
       "palm_change": -0.4,
-      "below_70_change": -6.12,
+      "below_70_change": -6.14,
       "kept": true
      }
     ]
@@ -1165,7 +1165,7 @@
        "band_1_resonance": 0.5
       },
       "palm_change": -0.6,
-      "below_70_change": -5.8,
+      "below_70_change": -5.79,
       "kept": true
      }
     ]
@@ -1267,7 +1267,7 @@
        "band_1_slope": 1.0,
        "band_1_resonance": 0.5
       },
-      "below_change": -25.11,
+      "below_change": -25.31,
       "keep_change": -0.02,
       "kept": true
      }
@@ -1413,11 +1413,11 @@
    "target": "room",
    "outcome": "kept",
    "numbers": {
-    "bus_lufs": -26.97,
+    "bus_lufs": -26.92,
     "reference": "gtr",
     "reference_lufs": -14.34,
     "target_lu": -13.0,
-    "fader_db": -0.37
+    "fader_db": -0.42
    }
   },
   {
@@ -1694,7 +1694,7 @@
      "kick": -59.24,
      "toms": -57.2,
      "cymbals": -41.16,
-     "room": -53.44,
+     "room": -53.43,
      "bass": -77.7,
      "gtr": -66.61,
      "synths": -46.85
@@ -1784,7 +1784,7 @@
      },
      {
       "gain_db": 6.0,
-      "kick_click": 3.03,
+      "kick_click": 3.02,
       "ok": true
      }
     ]
@@ -1989,7 +1989,7 @@
          "kick_low": 0.52,
          "kick_click": 0.46,
          "snare_body": 1.45,
-         "snare_crack": 1.62
+         "snare_crack": 1.59
         },
         "drive_db": 2.9356
        },
@@ -2001,7 +2001,7 @@
          "snare_body": 1.77,
          "snare_crack": 1.9
         },
-        "drive_db": 3.1085
+        "drive_db": 3.1086
        }
       ]
      }
@@ -2010,14 +2010,14 @@
      "kick_low": 0.52,
      "kick_click": 0.46,
      "snare_body": 1.45,
-     "snare_crack": 1.62
+     "snare_crack": 1.59
     },
     "master_punch": {
      "kick_low": 10.47,
      "kick_tail": -10.64,
      "kick_click": 2.0,
      "snare_body": 10.14,
-     "snare_crack": 2.34
+     "snare_crack": 2.37
     }
    }
   }

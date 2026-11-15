@@ -2482,7 +2482,7 @@
     "tried": [
      {
       "step_db": 0,
-      "kick_low": 6.31
+      "kick_low": 6.28
      },
      {
       "step_db": 1,
@@ -2522,7 +2522,7 @@
      },
      {
       "step_db": -1,
-      "kick_low": 5.41
+      "kick_low": 5.4
      },
      {
       "step_db": -2,
