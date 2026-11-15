@@ -2,14 +2,6 @@
 # sha256 is the downloaded file; bundle_sha256 is the installed .vst3 (tools/plugins.py bundle_hash).
 
 [[plugin]]
-name = "ZL Equalizer 2"
-version = "1.4.1"
-license = "AGPL-3.0"
-url = "https://github.com/ZL-Audio/ZLEqualizer/releases/download/1.4.1/ZL.Equalizer.2-1.4.1-macOS-arm64.dmg"
-sha256 = "770167ead54bccdbac5ad3a2f6bc844013808247fa633c434f39140fef085c2d"
-bundle_sha256 = "76ef9726b7f4fc984f4f37a54fd5518136e2b7bec0f64562387b1ff07d1fcb06"
-
-[[plugin]]
 name = "ZL Compressor"
 version = "0.6.1"
 license = "AGPL-3.0"
@@ -48,3 +40,11 @@ license = "Venn Audio freeware"
 url = "https://www.vennaudio.com/downloads/Free%20Suite/Free%20Suite_MacOS_1.5.7_Release.dmg"
 sha256 = "3806736065e905dc12a7da40873b02069106fad89d12c0836eadf2b4748ce21a"
 bundle_sha256 = "f93fe6eea90d49b5f6f6d92c5d7a6f02ff57f29eea95e63f1a23d5246f0f724d"
+
+[[plugin]]
+name = "FreeEQ"
+version = "1.5.7"
+license = "Venn Audio freeware"
+url = "https://www.vennaudio.com/downloads/Free%20Suite/Free%20Suite_MacOS_1.5.7_Release.dmg"
+sha256 = "3806736065e905dc12a7da40873b02069106fad89d12c0836eadf2b4748ce21a"
+bundle_sha256 = "3acbbedcfdbe6893c3638de768382d3a01290534478bdcd7d0bf68642fe92c5a"

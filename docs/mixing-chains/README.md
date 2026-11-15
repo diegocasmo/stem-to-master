@@ -71,7 +71,7 @@ Every implemented move that applies to the song's stems is logged in the recipe'
 
 - Instrumental only: vocal stems (`vox`, `vocal`, `voice`) and DI stems are left out by name, and silent stems by level; the `stems.classify` decision lists them under `left_out`. DIs are never mixed in, re-amped or used as a timing reference. Sound effects follow synths.
 - No new audio: no sample triggering beyond sample stems that already exist.
-- pedalboard's `HighpassFilter` and `LowpassFilter` are 6 dB/oct. For steeper slopes use `ZL Equalizer 2`.
+- pedalboard's `HighpassFilter` and `LowpassFilter` are 6 dB/oct. For steeper slopes use `FreeEQ` (`filter_eq`).
 
 ## Where this comes from
 

@@ -12,7 +12,7 @@ Goal: wide, heavy, tight rhythm guitars that leave room for the kick, bass, snar
 ### guitars.filters
 - **Why:** guitar lows fight the kick and bass. A hard low cut can kill the chug, so the cutoff is the highest that keeps it.
 - **Start:** a 24 dB/oct high-pass at 100, 80 or 60 Hz: the highest that keeps 80-120 Hz within 1 dB. Only that one is tried.
-- **Tool:** `ZL Equalizer 2`.
+- **Tool:** `FreeEQ`.
 - **Needed if:** always tried on each guitar track.
 - **Worked if:** 20-70 Hz falls by more than 0.5 dB and 80-120 Hz holds within 1 dB. No cutoff holding 80-120 Hz means dropped.
 
