@@ -54,6 +54,13 @@ def zl_comp(threshold, ratio, attack, release, knee=6.0, style="Clean"):
             "knee_width_knee_width": float(knee)}
 
 
+def zam_comp(threshold, ratio, attack, release):
+    """ZamCompX2 settings on its own grid (threshold 0.08 dB, ratio about 0.019), so the recipe holds what renders.
+    The knee stays hard: 4.5's soft knee raises the gain below threshold (+1.4 dB at 6 dB under it with knee 6)."""
+    return {"threshold_db": round(float(round(max(-80.0, threshold) / 0.08) * 0.08), 2), "ratio": float(ratio),
+            "attack_ms": float(attack), "release_ms": float(release), "knee_db": 0.0, "makeup_db": 0.0}
+
+
 def r2(value):
     return None if value is None else round(float(value), 2)
 
@@ -298,8 +305,7 @@ def decide_bass(node, dense):
         return after < before - HOLD_DB, {"note_spread_db": r2(after)}
 
     node.attempt("bass.compress", spread > 3, {"note_spread_db": r2(before), "note_level_p50_db": r2(level)},
-                 [{"plugin": "ZamCompX2", "settings": {"threshold_db": float(round(level - 8, 1)), "ratio": 4.0, "attack_ms": 3.0,
-                                                       "release_ms": 60.0, "knee_db": 6.0, "makeup_db": 0.0}}], judge)
+                 [{"plugin": "ZamCompX2", "settings": zam_comp(level - 8, 4.002, 3, 60)}], judge)
 
 
 def decide_guitar(node):
