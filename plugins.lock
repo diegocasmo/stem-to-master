@@ -48,3 +48,11 @@ license = "Venn Audio freeware"
 url = "https://www.vennaudio.com/downloads/Free%20Suite/Free%20Suite_MacOS_1.5.7_Release.dmg"
 sha256 = "3806736065e905dc12a7da40873b02069106fad89d12c0836eadf2b4748ce21a"
 bundle_sha256 = "3acbbedcfdbe6893c3638de768382d3a01290534478bdcd7d0bf68642fe92c5a"
+
+[[plugin]]
+name = "FreeCrush"
+version = "1.5.7"
+license = "Venn Audio freeware"
+url = "https://www.vennaudio.com/downloads/Free%20Suite/Free%20Suite_MacOS_1.5.7_Release.dmg"
+sha256 = "3806736065e905dc12a7da40873b02069106fad89d12c0836eadf2b4748ce21a"
+bundle_sha256 = "4abad20cfa9e76d83fada029e34612f356460b281b1c3747518b986794a6ab3a"

@@ -299,6 +299,43 @@ def decide_bass(node, dense):
 
     node.attempt("bass.compress", spread > 3, {"note_spread_db": r2(before), "note_level_p50_db": r2(level)},
                  [{"plugin": "ZamCompX2", "settings": zam_comp(level - 8, 4.002, 3, 60)}], judge)
+    bass_saturate(node, note_spread)
+
+
+# Small speakers hear a bass by its harmonics: 700 Hz-2 kHz more than 20 dB under 40-200 Hz goes unheard there.
+GROWL_DB = -20.0
+
+
+def bass_saturate(node, note_spread):
+    """bass.saturate: harmonics in 700 Hz-2 kHz, the band small speakers carry, from a parallel bit crush."""
+    def growl(audio=None, key=None):
+        return node.band(700, 2000, audio, key) - node.band(40, 200, audio, key)
+
+    g0, s0 = growl(), note_spread(node.audio)
+    # The crush sees the bass at -1 dBFS peak and the level comes back after it, so its depth does not depend on how
+    # loud the stem was recorded.
+    stage = float(round(-1.0 - 20 * np.log10(float(np.abs(node.audio).max()) + 1e-12), 2))
+    numbers = {"growl_db": r2(g0), "rule_db": GROWL_DB, "note_spread_db": r2(s0), "stage_db": stage}
+    if g0 >= GROWL_DB:
+        node.record("bass.saturate", "dropped: not needed", numbers)
+        return
+    tried = []
+    for bits in (8.0, 6.0, 4.0):
+        chain = [{"id": "bass.saturate", "plugin": "Gain", "settings": {"gain_db": stage}},
+                 {"id": "bass.saturate", "plugin": "FreeCrush", "settings": {"crush_bits": bits, "crush_bit_intensity": 12.0,
+                                                                              "crush_mix": 0.3}},
+                 {"id": "bass.saturate", "plugin": "Gain", "settings": {"gain_db": -stage}}]
+        out, key = daw.chain(node.cache, node.rate, node.key, lambda: node.audio, chain, sections=node.sections)
+        g, sp = growl(out, key), note_spread(out)
+        ok = g - g0 >= 2.0 and sp - s0 <= HOLD_DB
+        tried.append({"bits": bits, "growl_db": r2(g), "note_spread_db": r2(sp), "kept": ok})
+        if ok:
+            # The lightest crush (most bits) that lifts the growl 2 dB.
+            node.inserts.extend(chain)
+            node.audio, node.key = out, key
+            node.record("bass.saturate", "kept", numbers | {"tried": tried}, chain[1])
+            return
+    node.record("bass.saturate", "dropped: did not work", numbers | {"tried": tried})
 
 
 def decide_guitar(node):

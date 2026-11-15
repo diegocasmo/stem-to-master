@@ -1662,6 +1662,37 @@
    "insert": "ZamCompX2"
   },
   {
+   "move": "bass.saturate",
+   "target": "23_Bass",
+   "outcome": "dropped: did not work",
+   "numbers": {
+    "growl_db": -22.73,
+    "rule_db": -20.0,
+    "note_spread_db": 2.41,
+    "stage_db": 10.64,
+    "tried": [
+     {
+      "bits": 8.0,
+      "growl_db": -22.63,
+      "note_spread_db": 2.41,
+      "kept": false
+     },
+     {
+      "bits": 6.0,
+      "growl_db": -21.59,
+      "note_spread_db": 2.4,
+      "kept": false
+     },
+     {
+      "bits": 4.0,
+      "growl_db": -19.2,
+      "note_spread_db": 3.02,
+      "kept": false
+     }
+    ]
+   }
+  },
+  {
    "move": "guitars.filters",
    "target": "24_ElecGtr1",
    "outcome": "kept",
