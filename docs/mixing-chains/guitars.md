@@ -32,7 +32,7 @@ Goal: wide, heavy, tight rhythm guitars that leave room for the kick, bass, snar
 
 ### guitars.lead-space
 - **Why:** a lead or melody that plays alone in the middle needs its own space to sit above the rhythms.
-- **Start:** a `gtr-space` bus with a stereo delay (250 ms left, 375 ms right, feedback 0.3, wet only). Sends from the centred guitars at -16, -12, -8, -4 dB.
+- **Start:** a `gtr-space` bus with a stereo delay (250 ms left, 375 ms right, feedback 0.3, wet only; the plugin glides its dry level out over the render's first ~0.1 s). Sends from the centred guitars at -16, -12, -8, -4 dB.
 - **Tool:** `FreeDelay` on a bus fed by sends.
 - **Needed if:** a guitar panned at 0 (stereo ones only if their side/mid is -10 dB or less) plays within 30 dB of its peak in at least half the full-band frames.
 - **Worked if:** the full mix's 500 Hz-2 kHz side/mid rises by at least 0.5 dB and that band's level by at most 1 dB. Sends rise until it widens by 1.5 dB or a send fails after one passed; the last passing send is kept, else the bus is removed.

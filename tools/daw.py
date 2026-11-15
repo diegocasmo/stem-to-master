@@ -134,7 +134,7 @@ def load(plugin, settings):
     # A bundle left in plugins/ but not locked would render here and fail on a fresh clone.
     if plugin not in LOCKED:
         raise ValueError(f"{plugin} is in plugins/ but not in plugins.lock")
-    # Dragonfly draws on the process-wide C rand(), so its state is fixed before every load.
+    # A plugin that draws on the process-wide C rand() renders the same every run only if its state is fixed first.
     LIBC.srand(RAND_SEED)
     instance = pedalboard.load_plugin(str(bundle))
     for name, value in settings.items():
