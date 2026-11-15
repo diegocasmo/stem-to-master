@@ -259,11 +259,11 @@
      "id": "bass.compress",
      "plugin": "ZamCompX2",
      "settings": {
-      "threshold_db": -25.8,
-      "ratio": 4.0,
+      "threshold_db": -25.76,
+      "ratio": 4.002,
       "attack_ms": 3.0,
       "release_ms": 60.0,
-      "knee_db": 6.0,
+      "knee_db": 0.0,
       "makeup_db": 0.0
      }
     }
@@ -541,7 +541,7 @@
      }
     }
    ],
-   "fader_db": 10.48,
+   "fader_db": 10.78,
    "pan": 0,
    "out": "mix",
    "sends": []
@@ -606,7 +606,7 @@
     "id": "master.drive",
     "plugin": "Gain",
     "settings": {
-     "gain_db": 2.9174
+     "gain_db": 2.9179
     }
    },
    {
@@ -1121,14 +1121,14 @@
     "tried": [
      {
       "settings": {
-       "threshold_db": -25.8,
-       "ratio": 4.0,
+       "threshold_db": -25.76,
+       "ratio": 4.002,
        "attack_ms": 3.0,
        "release_ms": 60.0,
-       "knee_db": 6.0,
+       "knee_db": 0.0,
        "makeup_db": 0.0
       },
-      "note_spread_db": 1.51,
+      "note_spread_db": 1.73,
       "kept": true
      }
     ]
@@ -1420,11 +1420,11 @@
    "target": "bass",
    "outcome": "kept",
    "numbers": {
-    "bus_lufs": -27.82,
+    "bus_lufs": -28.12,
     "reference": "gtr",
     "reference_lufs": -14.34,
     "target_lu": -3.0,
-    "fader_db": 10.48
+    "fader_db": 10.78
    }
   },
   {
@@ -1485,7 +1485,7 @@
     "tried": [
      {
       "step_db": 0,
-      "kick_low": 12.09
+      "kick_low": 12.06
      }
     ],
     "fader_db": -0.35
@@ -1514,17 +1514,17 @@
    "target": "bass",
    "outcome": "kept",
    "numbers": {
-    "kick_low_before": 12.09,
+    "kick_low_before": 12.06,
     "tried": [
      {
       "range_db": 3.0,
-      "kick_low_prominence": 12.81,
+      "kick_low_prominence": 12.79,
       "between_change_db": -0.03,
       "kept": true
      },
      {
       "range_db": 6.0,
-      "kick_low_prominence": 12.85,
+      "kick_low_prominence": 12.82,
       "between_change_db": -0.03,
       "kept": true
      }
@@ -1536,7 +1536,7 @@
    "target": "gtr",
    "outcome": "dropped: not needed",
    "numbers": {
-    "kick_low": 12.85,
+    "kick_low": 12.82,
     "rule_db": 12.5
    }
   },
@@ -1546,13 +1546,13 @@
    "outcome": "dropped: not needed",
    "numbers": {
     "thirds_db": {
-     "63": -21.59,
-     "125": -23.42,
-     "160": -26.79,
-     "200": -24.49,
-     "500": -29.9
+     "63": -21.58,
+     "125": -23.43,
+     "160": -26.81,
+     "200": -24.5,
+     "500": -29.91
     },
-    "buildup_db": 2.33,
+    "buildup_db": 2.32,
     "trigger_db": 2.5
    }
   },
@@ -1571,7 +1571,7 @@
    "target": "bass",
    "outcome": "dropped: not needed",
    "numbers": {
-    "sub_tilt_db": -8.52,
+    "sub_tilt_db": -8.54,
     "rule_db": -4.0,
     "plays_under_drop_d": false
    }
@@ -1581,7 +1581,7 @@
    "target": "gtr",
    "outcome": "kept",
    "numbers": {
-    "tilt_db": -6.73,
+    "tilt_db": -6.72,
     "rule_db": -2.0,
     "bands": [
      [
@@ -1598,29 +1598,29 @@
      "toms": -49.56,
      "cymbals": -40.86,
      "room": -42.93,
-     "bass": -39.27,
+     "bass": -39.36,
      "gtr": -32.26,
      "synths": -41.2
     },
     "tried": [
      {
       "gain_db": 1.5,
-      "tilt_db": -5.83,
+      "tilt_db": -5.82,
       "ok": true
      },
      {
       "gain_db": 3.0,
-      "tilt_db": -4.84,
+      "tilt_db": -4.83,
       "ok": true
      },
      {
       "gain_db": 4.5,
-      "tilt_db": -3.77,
+      "tilt_db": -3.76,
       "ok": true
      },
      {
       "gain_db": 6.0,
-      "tilt_db": -2.64,
+      "tilt_db": -2.63,
       "ok": true
      }
     ]
@@ -1631,7 +1631,7 @@
    "target": "bass",
    "outcome": "dropped: did not work",
    "numbers": {
-    "tilt_db": -6.73,
+    "tilt_db": -6.72,
     "rule_db": -2.0,
     "bands": [
      [
@@ -1648,29 +1648,29 @@
      "toms": -49.56,
      "cymbals": -40.86,
      "room": -42.93,
-     "bass": -39.27,
+     "bass": -39.36,
      "gtr": -32.26,
      "synths": -41.2
     },
     "tried": [
      {
       "gain_db": 1.5,
-      "tilt_db": -2.56,
+      "tilt_db": -2.55,
       "ok": false
      },
      {
       "gain_db": 3.0,
-      "tilt_db": -2.46,
+      "tilt_db": -2.45,
       "ok": false
      },
      {
       "gain_db": 4.5,
-      "tilt_db": -2.33,
+      "tilt_db": -2.32,
       "ok": false
      },
      {
       "gain_db": 6.0,
-      "tilt_db": -2.15,
+      "tilt_db": -2.14,
       "ok": false
      }
     ]
@@ -1681,7 +1681,7 @@
    "target": "mix",
    "outcome": "dropped: not needed",
    "numbers": {
-    "tilt_db": -2.64,
+    "tilt_db": -2.63,
     "rule_db": -2.0,
     "bands": [
      [
@@ -1709,7 +1709,7 @@
    "target": "cymbals",
    "outcome": "kept",
    "numbers": {
-    "tilt_db": -15.55,
+    "tilt_db": -15.54,
     "rule_db": -14.137127292777816,
     "bands": [
      [
@@ -1726,14 +1726,14 @@
      "toms": -57.2,
      "cymbals": -41.16,
      "room": -52.89,
-     "bass": -77.57,
+     "bass": -77.69,
      "gtr": -66.61,
      "synths": -46.85
     },
     "tried": [
      {
       "gain_db": 2.0,
-      "tilt_db": -14.36,
+      "tilt_db": -14.35,
       "ok": true
      }
     ]
@@ -1766,7 +1766,7 @@
     "centred": [
      "18_ElecGtr3"
     ],
-    "side_mid_db": -5.53,
+    "side_mid_db": -5.52,
     "tried": [
      {
       "send_db": -16.0,
@@ -1826,17 +1826,17 @@
    "target": "snare",
    "outcome": "kept",
    "numbers": {
-    "snare_crack": 3.04,
+    "snare_crack": 3.0,
     "rule_db": 7.0,
     "tried": [
      {
       "gain_db": 2.0,
-      "snare_crack": 3.38,
+      "snare_crack": 3.34,
       "ok": false
      },
      {
       "gain_db": 4.0,
-      "snare_crack": 3.79,
+      "snare_crack": 3.76,
       "ok": true
      },
      {
@@ -1853,8 +1853,8 @@
    "outcome": "dropped: punch did not hold",
    "numbers": {
     "before": {
-     "kick_low": 12.84,
-     "kick_tail": -13.01,
+     "kick_low": 12.76,
+     "kick_tail": -12.97,
      "kick_click": 3.04,
      "snare_body": 11.66,
      "snare_crack": 4.32
@@ -1869,10 +1869,10 @@
        "release_release": 100.0,
        "knee_width_knee_width": 6.0
       },
-      "kick_low": 11.99,
-      "kick_tail": -12.06,
+      "kick_low": 11.88,
+      "kick_tail": -12.07,
       "kick_click": 2.87,
-      "snare_body": 10.76,
+      "snare_body": 10.74,
       "snare_crack": 3.79,
       "loudness_drop_db": 0.62,
       "kept": false
@@ -1886,11 +1886,11 @@
        "release_release": 100.0,
        "knee_width_knee_width": 6.0
       },
-      "kick_low": 10.98,
-      "kick_tail": -11.13,
+      "kick_low": 10.86,
+      "kick_tail": -11.05,
       "kick_click": 2.68,
-      "snare_body": 9.68,
-      "snare_crack": 3.41,
+      "snare_body": 9.69,
+      "snare_crack": 3.38,
       "loudness_drop_db": 1.21,
       "kept": false
      }
@@ -1903,8 +1903,8 @@
    "outcome": "measured",
    "numbers": {
     "trial_master_loss_db": {
-     "kick_low": 1.03,
-     "snare_body": 1.54
+     "kick_low": 0.98,
+     "snare_body": 1.55
     }
    }
   },
@@ -1914,73 +1914,73 @@
    "outcome": "kept",
    "numbers": {
     "range_db": [
-     10.43,
-     11.63
+     10.38,
+     11.58
     ],
     "tried": [
      {
       "step_db": 0,
-      "kick_low": 12.84
+      "kick_low": 12.76
      },
      {
       "step_db": 1,
-      "kick_low": 13.62
+      "kick_low": 13.57
      },
      {
       "step_db": 2,
-      "kick_low": 14.57
+      "kick_low": 14.49
      },
      {
       "step_db": 3,
-      "kick_low": 15.39
+      "kick_low": 15.33
      },
      {
       "step_db": 4,
-      "kick_low": 16.21
+      "kick_low": 16.19
      },
      {
       "step_db": 5,
-      "kick_low": 17.05
+      "kick_low": 16.96
      },
      {
       "step_db": 6,
-      "kick_low": 18.03
+      "kick_low": 17.96
      },
      {
       "step_db": 7,
-      "kick_low": 18.61
+      "kick_low": 18.63
      },
      {
       "step_db": 8,
-      "kick_low": 19.22
+      "kick_low": 19.24
      },
      {
       "step_db": 9,
-      "kick_low": 19.97
+      "kick_low": 19.95
      },
      {
       "step_db": -1,
-      "kick_low": 11.91
+      "kick_low": 11.82
      },
      {
       "step_db": -2,
-      "kick_low": 10.99
+      "kick_low": 10.91
      },
      {
       "step_db": -3,
-      "kick_low": 10.18
+      "kick_low": 10.1
      },
      {
       "step_db": -4,
-      "kick_low": 9.41
+      "kick_low": 9.34
      },
      {
       "step_db": -5,
-      "kick_low": 8.67
+      "kick_low": 8.61
      },
      {
       "step_db": -6,
-      "kick_low": 7.9
+      "kick_low": 7.85
      }
     ],
     "fader_db": -2.35
@@ -1992,8 +1992,8 @@
    "outcome": "dropped: in range",
    "numbers": {
     "range_db": [
-     11.64,
-     14.44
+     11.65,
+     14.45
     ],
     "tried": [
      {
@@ -2017,38 +2017,38 @@
        {
         "clip_dbfs": -2.0,
         "crest_loss_db": {
-         "kick_low": 0.5,
-         "kick_click": 0.48,
-         "snare_body": 1.58,
-         "snare_crack": 1.65
+         "kick_low": 0.49,
+         "kick_click": 0.46,
+         "snare_body": 1.59,
+         "snare_crack": 1.62
         },
-        "drive_db": 2.9174
+        "drive_db": 2.9179
        },
        {
         "clip_dbfs": -3.0,
         "crest_loss_db": {
-         "kick_low": 0.85,
-         "kick_click": 0.6,
-         "snare_body": 1.86,
-         "snare_crack": 1.83
+         "kick_low": 0.8,
+         "kick_click": 0.59,
+         "snare_body": 1.85,
+         "snare_crack": 1.8
         },
-        "drive_db": 3.0904
+        "drive_db": 3.0911
        }
       ]
      }
     ],
     "crest_loss_db": {
-     "kick_low": 0.5,
-     "kick_click": 0.48,
-     "snare_body": 1.58,
-     "snare_crack": 1.65
+     "kick_low": 0.49,
+     "kick_click": 0.46,
+     "snare_body": 1.59,
+     "snare_crack": 1.62
     },
     "master_punch": {
-     "kick_low": 10.49,
-     "kick_tail": -10.62,
-     "kick_click": 1.98,
-     "snare_body": 10.1,
-     "snare_crack": 2.39
+     "kick_low": 10.42,
+     "kick_tail": -10.57,
+     "kick_click": 1.99,
+     "snare_body": 10.09,
+     "snare_crack": 2.4
     }
    }
   }
