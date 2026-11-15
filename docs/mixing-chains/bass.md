@@ -35,7 +35,7 @@ Goal: a solid, even low end that locks with the kick, and a growl in the mids th
 - bass.align: not built yet; two bass tracks are summed as recorded.
 - bass.split: not built yet; each bass track gets the same chain.
 - bass.mud-cut: lowmid.cut (context.md) cuts a build-up on the bass when it owns it.
-- bass.growl: no song needed it yet.
+- bass.growl: a separate distorted mid-range split; not built, bass.saturate adds the harmonics.
 - bass.multiband: no song needed it yet.
 - bass.chorus: no song needed it yet.
 - bass.limit: no song needed it yet.

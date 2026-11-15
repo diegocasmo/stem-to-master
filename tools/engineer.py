@@ -330,7 +330,7 @@ def bass_saturate(node, note_spread):
         ok = g - g0 >= 2.0 and sp - s0 <= HOLD_DB
         tried.append({"bits": bits, "growl_db": r2(g), "note_spread_db": r2(sp), "kept": ok})
         if ok:
-            # The fewest bits' worth of crush that lifts the growl 2 dB.
+            # The lightest crush (most bits) that lifts the growl 2 dB.
             node.inserts.extend(chain)
             node.audio, node.key = out, key
             node.record("bass.saturate", "kept", numbers | {"tried": tried}, chain[1])
