@@ -1115,17 +1115,6 @@
    "insert": "ZamCompX2"
   },
   {
-   "move": "bass.saturate",
-   "target": "10_BassAmp",
-   "outcome": "dropped: not needed",
-   "numbers": {
-    "growl_db": -18.09,
-    "rule_db": -20.0,
-    "note_spread_db": 1.73,
-    "stage_db": 14.38
-   }
-  },
-  {
    "move": "guitars.filters",
    "target": "12_ElecGtr1",
    "outcome": "kept",
