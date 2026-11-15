@@ -21,7 +21,7 @@ RECIPE = {
     "buses": [
         {"name": "kick", "out": "mix", "inserts": []},
         {"name": "gtr", "out": "mix", "inserts": [{"plugin": "Duck", "settings": DUCK}]},
-        {"name": "verb", "out": "mix", "inserts": [{"plugin": "DragonflyPlateReverb", "settings": {}}]},
+        {"name": "verb", "out": "mix", "inserts": [{"plugin": "FreeDelay", "settings": {"wet_level": 1.0, "dry_level": 0.0, "use_beats": False, "msec_delay_l": 250.0, "msec_delay_r": 375.0, "feedback": 0.3}}]},
     ],
     "mix": {"inserts": [{"plugin": "ZL Equalizer 2", "settings": zl_eq({"type": "High Shelf", "freq": 8000, "gain": 1.5})}]},
     "master": {"inserts": [{"plugin": "Gain", "settings": {"gain_db": 6.0}},
